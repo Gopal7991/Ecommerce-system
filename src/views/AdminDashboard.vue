@@ -1,35 +1,37 @@
+<script setup>
+import { onMounted } from 'vue';
+import { toast } from 'vue3-toastify';
+
+onMounted(() => {
+  const successMsg = sessionStorage.getItem('toastMsg');
+  if (successMsg) {
+    toast.success(successMsg, {
+      position: 'top-right',
+    });
+    sessionStorage.removeItem('toastMsg');
+  }
+  
+});
+</script>
 <template>
   <div>
-    <div class="cards">
-      <div class="card">
-        <h4>Total Orders</h4>
+    <div class="flex gap-5">
+      
+      <div class="flex-1 bg-white p-5 rounded-lg text-center shadow-sm">
+        <h4 class="font-semibold">Total Orders</h4>
         <!-- <p>25</p> -->
       </div>
 
-      <div class="card">
-        <h4>Total Users</h4>
+      <div class="flex-1 bg-white p-5 rounded-lg text-center shadow-sm">
+        <h4 class="font-semibold">Total Users</h4>
         <!-- <p>120</p> -->
       </div>
 
-      <div class="card">
-        <h4>Revenue</h4>
+      <div class="flex-1 bg-white p-5 rounded-lg text-center shadow-sm">
+        <h4 class="font-semibold">Revenue</h4>
         <!-- <p>$1,500</p> -->
       </div>
+      
     </div>
   </div>
 </template>
-
-<style>
-.cards {
-  display: flex;
-  gap: 20px;
-}
-
-.card {
-  flex: 1;
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  text-align: center;
-}
-</style>

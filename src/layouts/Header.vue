@@ -40,7 +40,7 @@
             <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 space-x-2"   @click="logout" >
                
                 <span class="pi pi-sign-out"></span>
-                <span class="text-sm text-red-600">Logout</span>
+                <span class="text-sm">Logout</span>
             </a>
             
 

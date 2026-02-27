@@ -16,6 +16,7 @@
         <h2 class="text-3xl font-bold mb-6 text-gray-800">Login</h2>
 
         <Form @submit="handleLogin" :validation-schema="loginSchema">
+          
           <div class="mb-4">
             <label class="block text-gray-700">Email</label>
             <Field name="email" type="email" class="w-full px-4 py-2 mt-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600"/>
@@ -31,8 +32,15 @@
           <p v-if="serverError" class="text-red-600 mb-4">
             {{ serverError }}
           </p>
-
-          <button type="submit" class="w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700">Login</button>
+          <Button
+                :label="loading ? 'Logging in...' : 'Login'"
+                type="submit"
+                unstyled
+                class="w-full px-4 py-2 bg-indigo-300 hover:bg-indigo-300 rounded-md"
+                :loading="loading"
+                :disabled="loading"
+            />
+          <!-- <button type="submit" class="w-full px-4 py-2 bg-indigo-300 hover:bg-indigo-300  rounded-md ">Login</button> -->
         </Form>
 
         <p class="mt-4 text-sm text-gray-600">
@@ -50,8 +58,8 @@
 
           <div class="mb-4">
             <label class="block text-gray-700">Name</label>
-            <Field name="name"  type="text" class="w-full px-4 py-2 mt-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600" />
-            <ErrorMessage  name="name" class="text-red-500 text-sm mt-1" />
+            <Field name="firstname"  type="text" class="w-full px-4 py-2 mt-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600" />
+            <ErrorMessage  name="firstname" class="text-red-500 text-sm mt-1" />
           </div>
 
           <div class="mb-4">
@@ -76,7 +84,15 @@
             {{ serverError }}
           </p>
 
-          <button type="submit" class="w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"> Register </button>
+          <Button
+                label="Register"
+                type="submit"
+                unstyled
+                class="w-full px-4 py-2 bg-indigo-300 hover:bg-indigo-300 rounded-md"
+                :loading="loading"
+                :disabled="loading"
+            />
+          <!-- <button type="submit" class="w-full px-4 py-2 rounded-md bg-indigo-300 hover:bg-indigo-300"> Register </button> -->
         </Form>
 
         <p class="mt-4 text-sm text-gray-600">
@@ -113,9 +129,17 @@
             {{ serverMessage }}
           </p> -->
 
-          <button type="submit" class="w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700">
+          <!-- <button type="submit" class="w-full px-4 py-2 rounded-md bg-indigo-300 hover:bg-indigo-300">
             Submit
-          </button>
+          </button> -->
+          <Button
+                label="Submit"
+                type="submit"
+                unstyled
+                class="w-full px-4 py-2 bg-indigo-300 hover:bg-indigo-300 rounded-md"
+                :loading="loading"
+                :disabled="loading"
+            />
           <p v-if="message" style="color: green;">{{ message }}</p>
         </Form>
         <p class="mt-4 text-sm text-gray-600">
@@ -137,11 +161,13 @@ import * as yup from 'yup'
 import axios from 'axios'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import Button from 'primevue/button';
 
 
 const serverError = ref('')
 const router = useRouter()
 const activeModal = ref('Login');
+const loading = ref(false)
 
 const handleRegisterClick = () => {
   activeModal.value = 'Register';
@@ -184,7 +210,7 @@ const ForgotPasswordSchema = yup.object({
 })
 
 const registerSchema = yup.object({
-  name: yup.string().required('Name is required'),
+  firstname: yup.string().required('Name is required'),
   email: yup
     .string()
     .required('Email is required')
@@ -201,6 +227,7 @@ const registerSchema = yup.object({
 
 const handleLogin = async (values) => {
   serverError.value = ''
+  loading.value = true;
 
   try {
     const response = await axios.post(
@@ -214,13 +241,14 @@ console.log("Saved:", localStorage.getItem('api_token'));
     
     if(response.data.user.role === 1)
     {
-       router.push('/admin-dashboard')
+       router.push('/dashboard')
     }
     else {
-       router.push('/dashboard')
+       router.push('/')
     }
 
   } catch (error) {
+    loading.value = false;
     serverError.value =
       error.response?.data?.message || 'Login failed'
   }
@@ -228,6 +256,7 @@ console.log("Saved:", localStorage.getItem('api_token'));
 
 const handleRegister = async (values) => {
   serverError.value = ''
+  loading.value = true;
   try {
     const response = await axios.post(
       'http://127.0.0.1:8000/api/register',
@@ -248,6 +277,7 @@ const handleRegister = async (values) => {
 
 const handleForgotPassword = async (values) => {
   serverError.value = ''
+  loading.value = true;
   try {
     const response = await axios.post(
       'http://127.0.0.1:8000/api/forgot-password',

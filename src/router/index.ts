@@ -11,6 +11,7 @@ import Profile from '@/views/Profile.vue';
 import Setting from '@/views/Setting.vue';
 import ChangePassword from '@/views/ChangePassword.vue';
 import AddCategory from '@/views/categories/AddCategory.vue';
+import EditCategory from '@/views/categories/EditCategory.vue';
 
 const routes = [
   { path: '/', name: 'main', component: Main,meta: { guestOnly: true } },
@@ -55,6 +56,13 @@ const routes = [
         path: 'add-category',
         name: 'AddCategory',
         component: AddCategory,
+        meta: { requiresAuth: true }
+        
+      },
+      {
+        path: '/edit-category/:id',
+        name: 'EditCategory',
+        component: EditCategory,
         meta: { requiresAuth: true }
         
       }
