@@ -68,7 +68,7 @@ const submitCategory = async (values, { setErrors }) => {
       }
     )
     sessionStorage.setItem('toastMsg', 'Category added successfully!');
-    router.push('/category'); 
+    router.push('/categories'); 
     formData.value = {
       name: '',
       parent_id: null,
@@ -100,9 +100,9 @@ onMounted(() => {
     
     <!-- Header -->
     <div class="bg-indigo-100 rounded-xl p-6 mb-6">
-      <h1 class="text-2xl font-semibold">Add Category</h1>
-      <p class="text-gray-500 mt-1">
-        <a href="/category" class="text-black">Categories</a> . Add Category
+      <h1 class="text-2xl font-semibold text-indigo-900">Add Category</h1>
+      <p class="text-indigo-700 mt-1">
+        <router-link to="/categories" class="font-medium hover:underline">Categories</router-link> . Add Category
       </p>
     </div>
 
@@ -156,7 +156,7 @@ onMounted(() => {
               @click="saveForm"
               class="px-6 py-2.5 !bg-indigo-300 hover:!bg-indigo-400 !rounded-md !transition-all !shadow-md !border-none"
               :label="loading ? 'Saving...' : 'Save'" 
-                />
+            />
         </div>
       </Form>
     </div>

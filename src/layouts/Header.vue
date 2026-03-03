@@ -1,21 +1,3 @@
-<!-- <script setup>
-</script>
-
-<template>
-  <header class="bg-white shadow p-4 flex justify-between items-center">
-    <h1 class="text-xl font-semibold">Dashboard</h1>
-
-    <div class="flex items-center space-x-3">
-      <span class="text-gray-600">Admin</span>
-      <img
-        src="https://i.pravatar.cc/40"
-        class="rounded-full"
-        alt="avatar"
-      />
-    </div>
-  </header>
-</template> -->
-
 
 <template>
   <header class="bg-white shadow-md h-16 flex items-center justify-between px-4 sticky top-0 z-10">
@@ -57,8 +39,9 @@
 const emit = defineEmits(['toggle-sidebar']);
 import axios from 'axios'
 import { useRouter } from 'vue-router'
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted, onUnmounted  } from 'vue';
 import 'primeicons/primeicons.css'
+import emitter from '@/eventBus';
 const dynamicUrl = ref('');
 import defaultImgUrl from '@/assets/images/user_logo.png';
 
@@ -66,7 +49,33 @@ const currentImageSrc = computed(() => {
   return dynamicUrl.value || defaultImgUrl; // If dynamicUrl is falsy, use defaultImgUrl
 });
 
+
+const fetchUserImage = async () => {
+  try {
+    const { data } = await axios.get('/api/user', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('api_token')}` }
+    });
+    dynamicUrl.value = data.profile_image; 
+  } catch (err) {
+    console.error("Could not load user image", err);
+  }
+};
+
+// onMounted(fetchUserImage);
+onMounted(() => {
+  fetchUserImage(); // Initial load
+  
+  emitter.on('image-updated', (newUrl) => {
+    dynamicUrl.value = newUrl; // Update header image instantly!
+  });
+});
+
+// Clean up listener when component is destroyed
+onUnmounted(() => {
+  emitter.off('image-updated');
+});
 const serverError = ref('')
+
 
 const router = useRouter()
 

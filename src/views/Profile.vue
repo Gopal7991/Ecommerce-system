@@ -1,30 +1,50 @@
 <template>
   <div class="p-6 min-h-screen">
     <div class="bg-indigo-100 rounded-xl p-6 mb-6">
-      <h1 class="text-2xl font-semibold">My Profile</h1>
-      <p class="text-gray-500 mt-1"> <a href="/dashboard" class="text-black">Dashboard</a> . Profile</p>
+      <h1 class="text-2xl font-semibold text-indigo-900">My Profile</h1>
+        <p class="text-indigo-700 mt-1">
+            <router-link to="/dashboard" class="font-medium hover:underline">Dashboard</router-link> . Profile
+        </p>
     </div>
 
     <!-- Card -->
     <div class="flex bg-white rounded-xl shadow p-6 gap-6">
         <div class="  w-1/2 p-5 bg-gray-300 shadow-lg rounded-lg">
             <div class="h-[90%] flex items-center justify-center">
+                 <!-- <img :src="user.image_url" alt="User Image" /> -->
                 <img :src="currentImageSrc" alt="Content" class="w-100 h-100 rounded-full object-cover" />
             </div>
-            <div class="h-[10%]">
-                <input type="file" name="profile_image" @change="handleProfileChange" class="bg-white shadow-lg rounded-lg p-2 ml-[20px]" />
-                <!-- <button @click="updateImage">Update</button> -->
-                 <Button 
-                    type="submit"
-                    :loading="loading" 
-                    @click="updateImage"
-                    class="px-6 py-2.5 ml-[90px] !bg-indigo-300 hover:!bg-indigo-400 !rounded-md !transition-all !shadow-md !border-none"
-                    :label="loading ? 'Updating...' : 'Update'" 
+            <div class="h-[10%] flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <FileUpload 
+                        ref="fileInput" 
+                        mode="basic" 
+                        name="profile_image" 
+                        accept="image/*" 
+                        :maxFileSize="1000000"
+                        @select="onFileSelect" 
+                        chooseLabel="Browse"
+                        class="px-6 py-2 !bg-gray-400 hover:!bg-gray-500 !text-black !rounded-md !transition-all !shadow-md !border-none ml-auto"
                     />
-            </div>
-             
-        </div>
 
+                    <span 
+                        v-if="errors.profile_image" 
+                        class="text-red-500 text-sm whitespace-nowrap"
+                    >
+                        {{ errors.profile_image[0] }}
+                    </span>
+                </div>
+
+                <Button 
+                    type="button"
+                    :loading="loading1" 
+                    @click="updateImage"
+                    class="px-6 py-2 !bg-indigo-300 hover:!bg-indigo-400 !rounded-md !transition-all !shadow-md !border-none"
+                    :label="loading1 ? 'Updating...' : 'Update'" 
+                />
+
+            </div>
+        </div>
         
         <div class="w-1/2 p-5 bg-white shadow-lg rounded-lg overflow-hidden">
             <Form 
@@ -100,26 +120,74 @@ import { toast } from 'vue3-toastify';
 import Button from 'primevue/button';
 const dynamicUrl = ref('');
 import defaultImgUrl from '@/assets/images/user_logo.png';
-
+const errors = ref({});
 import * as yup from 'yup';
 import axios from 'axios';
+const fileInput = ref(null); 
+import emitter from '@/eventBus';
+import FileUpload from 'primevue/fileupload';
 
 const currentImageSrc = computed(() => {
   return dynamicUrl.value || defaultImgUrl; // If dynamicUrl is falsy, use defaultImgUrl
 });
+const onFileSelect = (event) => {
+    // PrimeVue returns an array of files. Take the first one.
+    const file = event.files[0]; 
+    imageFile.value = file;
 
+    // Instant Preview (Optional)
+    dynamicUrl.value = URL.createObjectURL(file);
+
+    // Clear validation error if it exists
+    if (errors.value.profile_image) {
+        delete errors.value.profile_image;
+    }
+};
 const imageFile = ref(null);
-const handleProfileChange = (e) => { imageFile.value = e.target.files[0]; };
+// const handleProfileChange = (e) => { imageFile.value = e.target.files[0]; };
 
 const updateImage = async () => {
-  const formData = new FormData();
-  formData.append('image', imageFile.value);
-  formData.append('_method', 'PUT'); // For Laravel PUT update
+    // Check if file exists
+    if (!imageFile.value) {
+        errors.value = { profile_image: ["Please choose an image first"] };
+        return;
+    }
 
-  await axios.post('/api/update-image', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  });
+    errors.value = {};
+    loading1.value = true;
+    
+    const formData = new FormData();
+    formData.append('profile_image', imageFile.value);
+
+    try {
+        const response = await axios.post('/api/update-image', formData, {
+            headers: { 
+                'Content-Type': 'multipart/form-data',
+                'Authorization': `Bearer ${localStorage.getItem('api_token')}`
+            }
+        });
+
+        // Update URLs
+        dynamicUrl.value = response.data.image_url;
+        emitter.emit('image-updated', response.data.image_url); 
+
+        // IMPORTANT: Reset the PrimeVue Component
+        imageFile.value = null;
+        if (fileInput.value) {
+            fileInput.value.clear(); // This clears the filename from the UI
+        }
+
+        toast.success("Profile updated!");
+    } catch (err) {
+        if (err.response && err.response.status === 422) {
+            errors.value = err.response.data.errors;
+        }
+    } finally {
+        loading1.value = false;
+    }
 };
+
+const loading1 = ref(false);
 const loading = ref(false);
 const initialValues = ref({}); 
 const router = useRouter()
@@ -153,6 +221,9 @@ const fetchProfile = async () => {
         birthdate: data.birthdate || '',
         gender: data.gender || ''
     };
+    dynamicUrl.value =data.profile_image; 
+    // console.log(data.profile_image)
+    // alert(dynamicUrl.value)
 
   } catch (error) {
     console.error(error);

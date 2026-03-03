@@ -48,9 +48,9 @@ const handleChangePassword = async (values, { setErrors, resetForm }) => {
   <div class="p-6 min-h-screen">
     
     <div class="bg-indigo-100 rounded-xl p-6 mb-6">
-      <h1 class="text-2xl font-semibold">Change Password</h1>
-      <p class="text-gray-500 mt-1"> 
-        <a href="/dashboard" class="text-black">Dashboard</a> . Change Password
+      <h1 class="text-2xl font-semibold text-indigo-900">Change Password</h1>
+      <p class="text-indigo-700 mt-1">
+        <router-link to="/dashboard" class="font-medium hover:underline">Dashboard</router-link> . Change Password
       </p>
     </div>
 
@@ -63,7 +63,7 @@ const handleChangePassword = async (values, { setErrors, resetForm }) => {
           <label class="block text-sm font-medium text-gray-700"> Current Password </label>
           <Field name="current_password" type="password" 
                  class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border focus:ring-2 focus:ring-indigo-400 focus:outline-none" 
-                 placeholder="Current" />
+                 placeholder="Current password" />
           <ErrorMessage name="current_password" class="text-red-500 text-sm mt-1 block" />
         </div>
 

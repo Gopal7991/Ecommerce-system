@@ -12,6 +12,8 @@ import Setting from '@/views/Setting.vue';
 import ChangePassword from '@/views/ChangePassword.vue';
 import AddCategory from '@/views/categories/AddCategory.vue';
 import EditCategory from '@/views/categories/EditCategory.vue';
+import ProductView from '@/views/products/ProductView.vue';
+import AddProduct from '@/views/products/AddProduct.vue';
 
 const routes = [
   { path: '/', name: 'main', component: Main,meta: { guestOnly: true } },
@@ -48,7 +50,7 @@ const routes = [
         meta: { requiresAuth: true }
       },
       {
-        path: 'category',
+        path: 'categories',
         component: CategoryView,
         meta: { requiresAuth: true }
       },
@@ -65,7 +67,19 @@ const routes = [
         component: EditCategory,
         meta: { requiresAuth: true }
         
-      }
+      },
+      {
+        path: 'products',
+        component: ProductView,
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'add-product',
+        name: 'AddProduct',
+        component: AddProduct,
+        meta: { requiresAuth: true }
+        
+      },
     ],
   },
   {

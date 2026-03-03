@@ -91,7 +91,7 @@ const updateCategory = async (values, { setErrors }) => {
     )
 
     sessionStorage.setItem('toastMsg', 'Category updated successfully!')
-    router.push('/category')
+    router.push('/categories')
 
   } catch (error) {
     if (error.response && error.response.status === 422) {
@@ -116,9 +116,9 @@ onMounted(() => {
     
     <!-- Header -->
     <div class="bg-indigo-100 rounded-xl p-6 mb-6">
-      <h1 class="text-2xl font-semibold">Edit Category</h1>
-      <p class="text-gray-500 mt-1">
-        <a href="/category" class="text-black">Categories</a> . Edit Category
+      <h1 class="text-2xl font-semibold text-indigo-900">Edit Category</h1>
+      <p class="text-indigo-700 mt-1">
+        <router-link to="/categories" class="font-medium hover:underline">Categories</router-link> . Edit Category
       </p>
     </div>
 
