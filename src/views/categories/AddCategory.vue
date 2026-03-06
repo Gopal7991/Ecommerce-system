@@ -9,7 +9,13 @@ import Button from 'primevue/button';
 
 
 const router = useRouter()
-
+const goBack = () => {
+    if (window.history.length > 1) {
+        router.back();
+    } else {
+        router.push('/categories'); 
+    }
+};
 function useCategories() {
   const categories = ref([])
   const loading = ref(false)
@@ -86,7 +92,6 @@ const submitCategory = async (values, { setErrors }) => {
       console.error(error.response?.data);
       toast.error('Something went wrong!');
     }
-    // alert('Something went wrong!')
   }
 }
 
@@ -150,6 +155,12 @@ onMounted(() => {
                 :loading="loading"
                 :disabled="loading"
             /> -->
+            <button 
+                type="button" 
+                @click="goBack" 
+                class="px-4 py-2 mr-3 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition">
+                Back
+            </button>
             <Button 
               type="submit"
               :loading="loading" 

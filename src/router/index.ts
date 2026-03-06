@@ -14,6 +14,7 @@ import AddCategory from '@/views/categories/AddCategory.vue';
 import EditCategory from '@/views/categories/EditCategory.vue';
 import ProductView from '@/views/products/ProductView.vue';
 import AddProduct from '@/views/products/AddProduct.vue';
+import EditProduct from '@/views/products/EditProduct.vue';
 
 const routes = [
   { path: '/', name: 'main', component: Main,meta: { guestOnly: true } },
@@ -79,6 +80,12 @@ const routes = [
         component: AddProduct,
         meta: { requiresAuth: true }
         
+      },
+      {
+        path: '/edit-product/:id',
+        name: 'EditProduct',
+        component: EditProduct,
+        meta: { requiresAuth: true }
       },
     ],
   },

@@ -9,6 +9,13 @@ import Button from 'primevue/button';
 
 const router = useRouter()
 const route = useRoute()
+const goBack = () => {
+    if (window.history.length > 1) {
+        router.back();
+    } else {
+        router.push('/categories'); 
+    }
+};
 
 const categoryId = route.params.id
 
@@ -175,19 +182,12 @@ onMounted(() => {
         </div>
 
         <div class="flex justify-end mt-6">
-          <!-- <button type="submit"
-                  class="px-6 py-2.5 bg-indigo-300 hover:bg-indigo-300 rounded"
-                  :disabled="loading">
-            {{ loading ? 'Updating...' : 'Update Category' }}
-          </button> -->
-            <!-- <Button 
-                    :label="loading ? 'Updating...' : 'Update'"
-                    type="submit"  
-                    unstyled
-                    class="px-6 py-2.5 bg-indigo-300 hover:bg-indigo-300 rounded"
-                    :loading="loading"
-                    :disabled="loading"
-            /> -->
+          <button 
+                type="button" 
+                @click="goBack" 
+                class="px-4 py-2 mr-3 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition">
+                Back
+            </button>
             <Button 
               type="submit"
               :loading="loading" 
