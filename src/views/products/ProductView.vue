@@ -1,6 +1,6 @@
 
 <template>
-  <div class="p-6  min-h-screen">
+  <div class="p-6 min-h-screen">
     
     <div class="bg-indigo-100 rounded-xl p-6 mb-6">
       <h1 class="text-2xl font-semibold text-indigo-900">Products</h1>
@@ -38,11 +38,12 @@
               <tr class="text-gray-500 border-b">
                 <th class="py-3">ID</th>
                 <th class="py-3">Product Name</th>
-                <th class="py-3">Description</th>
+                <!-- <th class="py-3">Description</th> -->
                 <th class="py-3">Category</th>
                 <th class="py-3">Price</th>
-                <th class="py-3">Size</th>
-                <th class="py-3">Colors</th>
+                <th class="py-3">Images</th>
+                <!-- <th class="py-3">Size</th> -->
+                <!-- <th class="py-3">Colors</th> -->
                 <th class="py-3">Is Active ?</th>
                 <th class="py-3 text-center">Actions</th>
               </tr>
@@ -52,7 +53,6 @@
               <tr v-if="loading">
                 <td colspan="6" class="py-20 text-center">
                   <div class="flex flex-col items-center justify-center gap-3">
-                    <!-- <ProgressSpinner style="width: 50px; height: 50px" strokeWidth="4" /> -->
                     <ProgressSpinner 
                       class="w-[50px] h-[50px] animate-spin" 
                       strokeWidth="4" 
@@ -75,11 +75,19 @@
               >
                 <td class="py-3">{{ product.id }}</td>
                 <td class="py-3 font-medium">{{ product.name }}</td>
-                <td class="py-3">{{ product.description ? product.description : '-' }}</td>
+                <!-- <td class="py-3">{{ product.description ? product.description : '-' }}</td> -->
                 <td class="py-3">{{ product.category.name }}</td>
                 <td class="py-3">{{ product.price }}</td>
-                <td class="py-3"> {{ [...new Set(product.variants.map(s => s.size))].join(', ') }}</td>
-                <td class="py-3"> {{ [...new Set(product.variants.map(v => v.color))].join(', ') }}</td>
+                <td class="py-3">
+                  <Button 
+                    icon="pi pi-images" 
+                    label="Manage" 
+                    class="p-button-sm p-button-outlined" 
+                    @click="openImagePopup(product)" 
+                  />
+                  </td>
+                <!-- <td class="py-3"> {{ [...new Set(product.variants.map(s => s.size))].join(', ') }}</td> -->
+                <!-- <td class="py-3"> {{ [...new Set(product.variants.map(v => v.color))].join(', ') }}</td> -->
                 <td class="py-3">
                   <span :class="['px-3 py-1 text-xs rounded-full', product.is_active ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600']">
                     {{ product.is_active ? 'Active': 'Inactive' }}
@@ -122,16 +130,6 @@
   >
       <div>
         <p>Are You Sure Delete a Product</p>
-          <!-- <ul >
-            <li 
-              v-for="(item, index) in selectedName" 
-              :key="index"
-              
-            >
-              <span v-if="index === 0" class="text-sm text-yellow-700 text-3xl"> Are you sure you want to delete this category: {{ item }}</span>
-              <span v-else>{{ item }}</span>
-            </li>
-          </ul> -->
       </div> 
       
       <template #footer>
@@ -143,6 +141,59 @@
       </template>
   </Dialog>
 
+  <Dialog 
+    v-model:visible="imageDialogVisible" 
+    modal 
+    :header="'Manage Images: ' + (activeProduct?.name || '')" 
+    :style="{ width: '45rem' }"
+  >
+    <div class="w-full">
+      <div class="relative right-0">
+        <ul class="relative flex flex-wrap px-1.5 py-1.5 list-none rounded-md bg-slate-100" data-tabs="tabs" role="list">
+          <li class="z-30 flex-auto text-center">
+            <a class="z-30 flex items-center justify-center w-full px-0 py-2 text-sm mb-0 transition-all ease-in-out border-0 rounded-md cursor-pointer text-slate-600 bg-inherit"
+            data-tab-target="" role="tab" aria-selected="true" aria-controls="view-image">
+              View Images
+            </a>
+          </li>
+          <!-- <li class="z-30 flex-auto text-center">
+            <a class="z-30 flex items-center justify-center w-full px-0 py-2 text-sm mb-0 transition-all ease-in-out border-0 rounded-lg cursor-pointer text-slate-700 bg-inherit"
+            data-tab-target="" role="tab" aria-selected="false" aria-controls="settings">
+              Settings
+            </a>
+          </li> -->
+        </ul>
+      </div>
+    
+    </div>
+    <div class="p-4">
+     <FilePond
+        ref="pond"
+        name="product_images"
+        label-idle="Drop images here or <span class='filepond--label-action'>Browse</span>"
+        :allow-multiple="true"
+        :allow-image-preview="true"
+        :allow-image-crop="true"
+        :allow-image-edit="true"
+        :image-edit-editor="imageEditEditor"
+        image-crop-aspect-ratio="1:1"
+        :files="tempFiles"
+        :credits="false"
+        
+      />
+
+    </div>
+    <template #footer>
+      <Button label="Close" icon="pi pi-times" @click="imageDialogVisible = false" text />
+      <Button 
+        label="Update Images"
+        icon="pi pi-check"
+        unstyled
+        class="bg-indigo-300 hover:bg-indigo-300 rounded px-4"
+        @click="updateImages"
+      />
+    </template>
+  </Dialog>
 </template>
 
 <script setup>
@@ -156,18 +207,79 @@ import Button from 'primevue/button';
 import axios from 'axios'; 
 import { useDialog } from 'primevue/usedialog';
 
+import vueFilePond from "vue-filepond";
+
+import FilePondPluginImagePreview from "filepond-plugin-image-preview";
+import FilePondPluginImageCrop from "filepond-plugin-image-crop";
+import FilePondPluginImageEdit from "filepond-plugin-image-edit";
+
+import "filepond/dist/filepond.min.css";
+import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css";
+import FilePondPluginImageTransform from "filepond-plugin-image-transform";
+import { openDefaultEditor } from "@pqina/pintura";
+import "@pqina/pintura/pintura.css";
+
+const FilePond = vueFilePond(
+  FilePondPluginImagePreview,
+  FilePondPluginImageCrop,
+  FilePondPluginImageEdit,
+  FilePondPluginImageTransform
+);
+const imageEditEditor = {
+  open: async (file, instructions) => {
+    console.log("Opening Pintura editor with file:", file);
+
+    let fileToEdit = file;
+
+    if (typeof file === 'string') {
+      const res = await fetch(file);
+      const blob = await res.blob();
+      fileToEdit = new File([blob], 'image.jpg', { type: blob.type });
+    }
+
+    const editor = openDefaultEditor({
+      src: fileToEdit,
+      imageCropAspectRatio: 1,
+      imageTransformOutputQuality: 1, 
+    });
+
+    editor.on("process", async (result) => {
+      console.log("Processing done, result.dest:", result.dest);
+
+      const editedBlob = result.dest;
+      const editedFile = new File([editedBlob], fileToEdit.name, { type: editedBlob.type });
+
+      console.log("Created edited File object:", editedFile);
+
+      if (pond.value) {
+        pond.value.removeFiles();      
+        pond.value.addFile(editedFile); 
+      }
+
+      instructions.onconfirm({ file: editedFile });
+
+      editor.close();
+    });
+
+    editor.on("close", () => {
+      instructions.oncancel();
+    });
+  }
+};
+const pond = ref(null);
 const products = ref([]);
 const loading = ref(true);
 const error = ref(null);
 const successMessage = ref('')
-
 const first = ref(0); 
 const rows = ref(5); 
-
 const visible = ref(false);
 const selectedId = ref(null);
 const selectedName = ref('');
 
+const imageDialogVisible = ref(false);
+const activeProduct = ref(null);
+const tempFiles = ref([]);
 const openDeleteDialog = (id) => {
   selectedId.value = id;
   visible.value = true;
@@ -195,6 +307,46 @@ const fetchProducts = async () => {
     error.value = 'Failed to fetch products: ' + err.message;
   } finally {
     loading.value = false;
+  }
+};
+const openImagePopup = (product) => {
+  activeProduct.value = product;
+
+  tempFiles.value = (product.images || []).map(img => ({
+    source: img.url,
+    options: { type: 'local' }
+  }));
+
+  imageDialogVisible.value = true;
+};
+const updateImages = async () => {
+  try {
+
+    const files = pond.value.getFiles();
+
+    const formData = new FormData();
+
+    files.forEach((fileItem) => {
+      formData.append("images[]", fileItem.file);
+    });
+
+    formData.append("product_id", activeProduct.value.id);
+
+    const token = localStorage.getItem("api_token");
+
+    await axios.post("/api/products/upload-images", formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "multipart/form-data"
+      }
+    });
+
+    toast.success("Images uploaded successfully");
+
+    imageDialogVisible.value = false;
+
+  } catch (error) {
+    toast.error("Image upload failed");
   }
 };
 const handleDelete = async (productId) => {
@@ -235,3 +387,66 @@ onMounted(() => {
   
 });
 </script>
+
+<style scoped>
+@reference "tailwindcss";
+
+/* 1. Remove the black background from the preview images */
+:deep(.filepond--image-preview-wrapper),
+:deep(.filepond--image-preview),
+:deep(.filepond--file) {
+  background-color: transparent !important;
+}
+
+/* 2. Add padding on all 4 sides so images don't touch the gray border */
+:deep(.filepond--list) {
+  @apply flex flex-wrap !p-10; /* Increased to p-10 for more breathing room */
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 20px !important; /* Space between the images */
+}
+
+/* 3. Adjust item width for the 2-column layout with the new gap */
+:deep(.filepond--item) {
+  width: calc(50% - 10px) !important;
+  @apply !m-0;
+}
+
+/* 4. Fix for the inner 'clip' area that can sometimes stay black */
+:deep(.filepond--image-clip) {
+  background-color: transparent !important;
+}
+</style>
+
+
+
+<style scoped>
+@reference "tailwindcss";
+
+/* 1. Force the internal list into a grid */
+:deep(.filepond--list) {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  @apply !p-6; /* Internal padding on 4 sides so images don't touch edges */
+  gap: 16px !important;
+}
+
+/* 2. Force 2 columns (50% width) and disable FilePond's absolute positioning */
+:deep(.filepond--item) {
+  width: calc(50% - 8px) !important;
+  position: relative !important;
+  transform: none !important; /* Critical: stops overlapping without inspect */
+  @apply !m-0;
+}
+
+/* 3. Make preview background transparent instead of black */
+:deep(.filepond--image-preview-wrapper),
+:deep(.filepond--file) {
+  background-color: transparent !important;
+}
+
+:deep(.filepond--panel-root) {
+  @apply bg-gray-200/50 rounded-xl;
+}
+</style>
+
