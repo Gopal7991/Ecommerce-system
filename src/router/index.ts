@@ -15,6 +15,8 @@ import EditCategory from '@/views/categories/EditCategory.vue';
 import ProductView from '@/views/products/ProductView.vue';
 import AddProduct from '@/views/products/AddProduct.vue';
 import EditProduct from '@/views/products/EditProduct.vue';
+import ProductList from '@/views/productdata/ProductList.vue';
+import UserLayout from '@/layouts/UserLayout.vue';
 
 const routes = [
   { path: '/', name: 'main', component: Main,meta: { guestOnly: true } },
@@ -40,7 +42,7 @@ const routes = [
        meta: { requiresAuth: true }
       },
       {
-        path: 'chnage-password',
+        path: 'change-password',
         name: 'ChangePassword',
         component: ChangePassword,
         meta: { requiresAuth: true }
@@ -90,9 +92,17 @@ const routes = [
     ],
   },
   {
-    // path: '/',
-    // component: DashboardLayout,
-    // meta: { requiresAuth: true },
+    path: '/product-list',
+    component: UserLayout,
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: '/products-all',
+        name: 'ProductList',
+        component: ProductList,
+        meta: { requiresAuth: true }
+      },
+    ],
   }
 ];
 

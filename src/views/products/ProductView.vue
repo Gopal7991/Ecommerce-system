@@ -22,14 +22,28 @@
           placeholder="Search Product"
           class="border rounded-lg px-4 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-indigo-400"
         />
-        <Button asChild>
+
+        <div class="flex gap-4 items-center">
+          <select 
+            v-model="sortOption" 
+            class="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          >
+            <option value="">Sort By</option>
+            <option value="name_asc">Product Name: A → Z</option>
+            <option value="name_desc">Product Name: Z → A</option>
+            <option value="price_low_high">Price: Low → High</option>
+            <option value="price_high_low">Price: High → Low</option>
+          </select>
+
+          <Button asChild>
             <router-link 
-            to="/add-product" 
-            class="px-6 py-2.5 !bg-indigo-300 hover:!bg-indigo-400 !rounded-md !transition-all !shadow-md !border-none text-white no-underline inline-flex items-center"
+              to="/add-product" 
+              class="px-6 py-2.5 !bg-indigo-300 hover:!bg-indigo-400 !rounded-md !transition-all !shadow-md !border-none text-white no-underline inline-flex items-center"
             >
-                + Add Product
+              + Add Product
             </router-link>
-        </Button>
+          </Button>
+        </div>
       </div>
 
       <div class="overflow-x-auto">
@@ -147,25 +161,7 @@
     :header="'Manage Images: ' + (activeProduct?.name || '')" 
     :style="{ width: '45rem' }"
   >
-    <div class="w-full">
-      <div class="relative right-0">
-        <ul class="relative flex flex-wrap px-1.5 py-1.5 list-none rounded-md bg-slate-100" data-tabs="tabs" role="list">
-          <li class="z-30 flex-auto text-center">
-            <a class="z-30 flex items-center justify-center w-full px-0 py-2 text-sm mb-0 transition-all ease-in-out border-0 rounded-md cursor-pointer text-slate-600 bg-inherit"
-            data-tab-target="" role="tab" aria-selected="true" aria-controls="view-image">
-              View Images
-            </a>
-          </li>
-          <!-- <li class="z-30 flex-auto text-center">
-            <a class="z-30 flex items-center justify-center w-full px-0 py-2 text-sm mb-0 transition-all ease-in-out border-0 rounded-lg cursor-pointer text-slate-700 bg-inherit"
-            data-tab-target="" role="tab" aria-selected="false" aria-controls="settings">
-              Settings
-            </a>
-          </li> -->
-        </ul>
-      </div>
-    
-    </div>
+   
     <div class="p-4">
      <FilePond
         ref="pond"
@@ -179,6 +175,7 @@
         image-crop-aspect-ratio="1:1"
         :files="tempFiles"
         :credits="false"
+         @removefile="removeImage"
         
       />
 
@@ -197,7 +194,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { toast } from 'vue3-toastify';
 import 'primeicons/primeicons.css'
 import ProgressSpinner from 'primevue/progressspinner';
@@ -225,6 +222,7 @@ const FilePond = vueFilePond(
   FilePondPluginImageEdit,
   FilePondPluginImageTransform
 );
+const search = ref('');
 const imageEditEditor = {
   open: async (file, instructions) => {
     console.log("Opening Pintura editor with file:", file);
@@ -243,23 +241,30 @@ const imageEditEditor = {
       imageTransformOutputQuality: 1, 
     });
 
-    editor.on("process", async (result) => {
-      console.log("Processing done, result.dest:", result.dest);
+   editor.on("process", async (result) => {
 
-      const editedBlob = result.dest;
-      const editedFile = new File([editedBlob], fileToEdit.name, { type: editedBlob.type });
+    const editedBlob = result.dest;
 
-      console.log("Created edited File object:", editedFile);
+    const editedFile = new File(
+      [editedBlob],
+      fileToEdit.name,
+      { type: editedBlob.type }
+    );
 
-      if (pond.value) {
-        pond.value.removeFiles();      
-        pond.value.addFile(editedFile); 
-      }
+    const files = pond.value.getFiles();
 
-      instructions.onconfirm({ file: editedFile });
+    // find the file being edited
+    const fileIndex = files.findIndex(f => f.file.name === fileToEdit.name);
 
-      editor.close();
-    });
+    if (fileIndex !== -1) {
+      pond.value.removeFile(files[fileIndex].id);
+      pond.value.addFile(editedFile, { index: fileIndex });
+    }
+
+    instructions.onconfirm({ file: editedFile });
+
+    editor.close();
+  });
 
     editor.on("close", () => {
       instructions.oncancel();
@@ -276,10 +281,19 @@ const rows = ref(5);
 const visible = ref(false);
 const selectedId = ref(null);
 const selectedName = ref('');
-
+const deletedImages = ref([]);
 const imageDialogVisible = ref(false);
 const activeProduct = ref(null);
 const tempFiles = ref([]);
+const sortOption = ref('');
+const filteredProducts = computed(() => {
+  if (!search.value) return products.value;
+
+  return products.value.filter(p => 
+    p.name.toLowerCase().includes(search.value.toLowerCase()) ||
+    p.category.name.toLowerCase().includes(search.value.toLowerCase())
+  );
+});
 const openDeleteDialog = (id) => {
   selectedId.value = id;
   visible.value = true;
@@ -293,43 +307,92 @@ const onPage = (event) => {
 };
 const fetchProducts = async () => {
   try {
-    const token = localStorage.getItem('api_token')
+    loading.value = true;
+    const token = localStorage.getItem('api_token');
 
-      const response = await axios.get('/api/products', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json'
-        }
-      })
-    products.value = response.data.data; // Assign the response data to the reactive ref
-    console.log(response.data)
+    let sort_by = '';
+    let sort_order = 'asc';
+    switch (sortOption.value) {
+      case 'name_asc': sort_by = 'name'; sort_order = 'asc'; break;
+      case 'name_desc': sort_by = 'name'; sort_order = 'desc'; break;
+      case 'price_low_high': sort_by = 'price'; sort_order = 'asc'; break;
+      case 'price_high_low': sort_by = 'price'; sort_order = 'desc'; break;
+      default: sort_by = 'id'; sort_order = 'asc';
+    }
+
+    const response = await axios.get('/api/products', {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+      params: {
+        sort_by,
+        sort_order,
+        search: search.value
+      }
+    });
+
+    products.value = response.data.data;
   } catch (err) {
-    error.value = 'Failed to fetch products: ' + err.message;
+    toast.error('Failed to fetch products: ' + err.message);
   } finally {
     loading.value = false;
   }
 };
-const openImagePopup = (product) => {
-  activeProduct.value = product;
 
-  tempFiles.value = (product.images || []).map(img => ({
-    source: img.url,
-    options: { type: 'local' }
-  }));
+watch([sortOption, search], () => {
+  fetchProducts();
+});
 
-  imageDialogVisible.value = true;
-};
-const updateImages = async () => {
+const openImagePopup = async (product) => {
   try {
 
-    const files = pond.value.getFiles();
+    activeProduct.value = product;
 
-    const formData = new FormData();
+    const token = localStorage.getItem("api_token");
 
-    files.forEach((fileItem) => {
-      formData.append("images[]", fileItem.file);
+    const response = await axios.get(`/api/products/${product.id}/images`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json"
+      }
     });
 
+    const images = response.data.images;
+
+    tempFiles.value = images.map(img => ({
+    source: img.url,
+    options: {
+      type: "local",
+      file: {
+        name: img.url.split('/').pop(),
+        size: 123456,
+        type: "image/jpeg"
+      },
+      metadata: {
+        id: img.id,
+        poster: img.url
+      }
+    }
+  }));
+
+    imageDialogVisible.value = true;
+
+  } catch (error) {
+    toast.error("Failed to load product images");
+  }
+};
+
+
+const updateImages = async () => {
+  try {
+    if (!pond.value) return toast.error("FilePond not ready");
+
+    const newFiles = pond.value.getFiles().filter(f => f.file instanceof File);
+
+    if (!newFiles.length) {
+      return toast.error("Please upload at least one new image");
+    }
+
+    const formData = new FormData();
+    newFiles.forEach(fileItem => formData.append("images[]", fileItem.file));
     formData.append("product_id", activeProduct.value.id);
 
     const token = localStorage.getItem("api_token");
@@ -343,11 +406,41 @@ const updateImages = async () => {
 
     toast.success("Images uploaded successfully");
 
-    imageDialogVisible.value = false;
+    await openImagePopup(activeProduct.value);
 
   } catch (error) {
-    toast.error("Image upload failed");
+    console.error(error);
+    toast.error(
+      error.response?.data?.message || "Image upload failed"
+    );
   }
+};
+
+const removeImage = async (error, file) => {
+
+  const imageId = file.getMetadata("id");
+
+  // If it is newly uploaded image (not in DB)
+  if (!imageId) return;
+
+  try {
+
+    const token = localStorage.getItem("api_token");
+
+    await axios.delete(`/api/products/delete-image/${imageId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    toast.success("Image deleted successfully");
+
+  } catch (error) {
+
+    toast.error("Image delete failed");
+
+  }
+
 };
 const handleDelete = async (productId) => {
     try {
@@ -388,7 +481,7 @@ onMounted(() => {
 });
 </script>
 
-<style scoped>
+<!-- <style scoped>
 @reference "tailwindcss";
 
 /* 1. Remove the black background from the preview images */
@@ -416,37 +509,67 @@ onMounted(() => {
 :deep(.filepond--image-clip) {
   background-color: transparent !important;
 }
-</style>
+</style> -->
 
 
 
 <style scoped>
 @reference "tailwindcss";
 
-/* 1. Force the internal list into a grid */
 :deep(.filepond--list) {
   display: flex !important;
   flex-wrap: wrap !important;
-  @apply !p-6; /* Internal padding on 4 sides so images don't touch edges */
-  gap: 16px !important;
+  gap: 12px !important; /* space between images */
+  padding: 8px !important; /* inner padding */
 }
 
-/* 2. Force 2 columns (50% width) and disable FilePond's absolute positioning */
+/* Two images per row with 10% bigger squares (~145px) */
 :deep(.filepond--item) {
-  width: calc(50% - 8px) !important;
+  width: calc(50% - 6px) !important; /* two per row minus half gap */
+  height: 160px !important;           /* 10% bigger than 132px */
   position: relative !important;
-  transform: none !important; /* Critical: stops overlapping without inspect */
-  @apply !m-0;
+  transform: none !important;
+  margin: 0 !important;
 }
 
-/* 3. Make preview background transparent instead of black */
+/* Panel background */
+:deep(.filepond--panel-root) {
+  @apply bg-gray-200/50 rounded-xl;
+}
+
+/* Remove dark preview background */
 :deep(.filepond--image-preview-wrapper),
 :deep(.filepond--file) {
   background-color: transparent !important;
 }
 
-:deep(.filepond--panel-root) {
-  @apply bg-gray-200/50 rounded-xl;
+/* Make inner preview fill the square */
+:deep(.filepond--image-preview-wrapper) {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Image fill container and crop */
+:deep(.filepond--image-preview img) {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important; /* crop to fill square */
+}
+
+/* Force square crop overlay */
+:deep(.filepond--image-clip) {
+  aspect-ratio: 1 / 1;
+}
+
+/* Responsive: single column on very small screens */
+@media (max-width: 480px) {
+  :deep(.filepond--item) {
+    width: 100% !important;
+    height: 120px !important; /* scale smaller for tiny screens */
+  }
 }
 </style>
 

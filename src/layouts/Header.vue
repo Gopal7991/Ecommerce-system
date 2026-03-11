@@ -15,7 +15,7 @@
                 <span class="pi pi-user"></span>
                 <span>My Profile</span>
             </a>
-             <a href="/chnage-password" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 space-x-2" @click="isDropdownOpen = false">
+             <a href="/change-password" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 space-x-2" @click="isDropdownOpen = false">
                 <span class="pi pi-eye"></span>
                 <span>Change Password</span>
             </a>
@@ -70,7 +70,6 @@ onMounted(() => {
   });
 });
 
-// Clean up listener when component is destroyed
 onUnmounted(() => {
   emitter.off('image-updated');
 });
@@ -82,7 +81,6 @@ const router = useRouter()
 const logout = async () => {
     await axios.get('http://127.0.0.1:8000/sanctum/csrf-cookie');
   const token = localStorage.getItem('api_token');
- 
   try {
     await axios.post('/api/logout', {}, {
         headers: {

@@ -244,7 +244,7 @@ console.log("Saved:", localStorage.getItem('api_token'));
        router.push('/dashboard')
     }
     else {
-       router.push('/')
+       router.push('/product-list')
     }
 
   } catch (error) {
