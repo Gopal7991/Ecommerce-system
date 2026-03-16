@@ -1,65 +1,215 @@
 <template>
-  <header class="bg-white shadow-md h-16 flex items-center justify-between px-6 sticky top-0 z-50">
-    <!-- Navigation Tabs -->
-    <nav class="flex h-full items-center space-x-1" role="tablist">
-      <button 
-        v-for="tab in navigationTabs" 
-        :key="tab.name"
-        @click="handleTabClick(tab)"
-        :class="[
-          'px-4 h-full flex items-center text-sm font-medium transition-all border-b-2 mt-0.5 outline-none',
-          activeTab === tab.name 
-            ? 'border-indigo-600 text-indigo-600 bg-indigo-50/30' 
-            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-        ]"
-      >
-        <span v-if="tab.icon" :class="[tab.icon, 'mr-2']"></span>
-        {{ tab.label }}
-      </button>
+  <header class="bg-indigo-100 shadow-md h-16 flex items-center justify-between px-6 sticky top-0 z-50">
+    <button @click="emit('toggle-sidebar')" class="text-gray-500 hover:text-gray-700">
+        <img :src="ecommerce" class="h-15 w-auto object-contain" />
+    </button>
+    <nav class="flex h-full items-center space-x-1">
+        <button
+            v-for="tab in navigationTabs"
+            :key="tab.name"
+            @click="handleTabClick(tab)"
+            :class="[
+                'px-4 h-full flex items-center text-sm font-medium transition-all border-b-2',
+                activeTab === tab.name
+                ? `border-${tab.color}-600 text-${tab.color}-600`
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            ]"
+            >
+            <span v-if="tab.icon" :class="[tab.icon, 'mr-2']"></span>
+            {{ tab.label }}
+        </button>
+        <!-- <div class="relative flex">
+            <button
+                v-for="cat in parentCategories"
+                :key="cat.id"
+                @click="openCategory(cat)"
+                class="px-4 h-full flex items-center text-sm font-medium text-gray-600 hover:text-indigo-600"
+            >
+                {{ cat.name }}
+            </button>
 
-      <!-- Logout Tab (Styled as a Tab) -->
-      <button 
-        @click="logout"
-        class="px-4 h-full flex items-center text-sm font-medium text-red-500 hover:text-red-700 hover:bg-red-50/30 border-b-2 border-transparent transition-all"
-      >
-        <span class="pi pi-sign-out mr-2"></span>
-        Logout
-      </button>
+            <div v-if="childCategories.length" class="absolute top-10 left-0 bg-white shadow-lg rounded-md w-48 z-50">
+                <button
+                    v-for="child in childCategories"
+                    :key="child.id"
+                    @click="router.push(`/category/${child.id}`)"
+                    class="block w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-indigo-50"
+                >
+                    {{ child.name }}
+                </button>
+            </div>
+        </div> -->
+        <div class="flex">
+            <div
+                v-for="cat in parentCategories"
+                :key="cat.id"
+                class="relative"
+            >
+                <button
+                @click="openCategory(cat)"
+                class="px-4 h-full flex items-center text-sm font-medium text-gray-600 hover:text-indigo-600"
+                >
+                {{ cat.name }}
+                </button>
+
+                <div
+                v-if="selectedCategory && selectedCategory.id === cat.id"
+                class="absolute top-9 left-0 mt-1 bg-white shadow-lg rounded-md w-48 z-50"
+                >
+                <button
+                    v-for="child in childCategories"
+                    :key="child.id"
+                    @click="router.push(`/category/${child.id}`)"
+                    class="block w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-indigo-50"
+                >
+                    {{ child.name }}
+                </button>
+                </div>
+
+            </div>
+        </div>
+        <!-- <button 
+            @click="logout"
+            class="px-4 h-full flex items-center text-sm font-medium text-red-500 hover:text-red-700"
+        >
+            <span class="pi pi-sign-out mr-2"></span>
+            Logout
+        </button> -->
     </nav>
 
-    <div class="relative flex items-center">
-      <button 
-        @click.stop="toggleDropdown" 
-        class="flex items-center space-x-2 focus:outline-none group p-1 rounded-full hover:bg-gray-100 transition-colors"
-      >
-        <div class="h-10 w-10 rounded-full overflow-hidden border-2 border-gray-200 group-hover:border-indigo-500 transition-all shadow-sm">
-          <img 
-            :src="currentImageSrc" 
-            alt="Profile" 
-            class="h-full w-full object-cover" 
-          />
-        </div>
-        <i class="pi pi-chevron-down text-xs text-gray-400 group-hover:text-gray-600 transition-transform" :class="{'rotate-180': isDropdownOpen}"></i>
-      </button>
+    <div class="relative flex items-center space-x-4">
+        <!-- <Button
+            icon="pi pi-shopping-cart"
+            class="p-button-rounded p-button-text w-14 h-14 [--p-icon-size:1.5rem]"
+            @click="router.push('/cart')"
+        />
+        <Badge 
+            v-if="cartCount > 0"
+            :value="cartCount"
+            severity="danger"
+            class="absolute -top-1 -right-1"
+        /> -->
+        <Button
+            icon="pi pi-shopping-cart"
+            class="p-button-rounded p-button-text w-14 h-14 [--p-icon-size:1.5rem]"
+            @click="visible = true"
+            
+        />
 
-      <!-- <transition 
-        enter-active-class="transition ease-out duration-100"
-        enter-from-class="transform opacity-0 scale-95"
-        enter-to-class="transform opacity-100 scale-100"
-        leave-active-class="transition ease-in duration-75"
-        leave-from-class="transform opacity-100 scale-100"
-        leave-to-class="transform opacity-0 scale-95"
-      >
-        <div v-if="isDropdownOpen" class="absolute right-0 top-full mt-2 py-2 w-48 bg-white rounded-lg shadow-xl ring-1 ring-black ring-opacity-5 z-50">
-          <div class="px-4 py-2 border-b border-gray-50 text-xs font-semibold text-gray-400 uppercase">Manage Account</div>
-          <button @click="logout" class="w-full flex items-center px-4 py-3 text-sm text-red-600 hover:bg-red-50 space-x-3">
-            <span class="pi pi-sign-out"></span>
-            <span>Logout</span>
-          </button>
+        <Badge
+            v-if="cartCount > 0"
+            :value="cartCount"
+            severity="success"
+            class="absolute -top-1 "
+        />
+
+        <div class="relative">
+            <button 
+                @click.stop="toggleDropdown" 
+                class="flex items-center space-x-2 focus:outline-none group p-1 rounded-full hover:bg-gray-100 transition-colors"
+            >
+                <div class="h-10 w-10 rounded-full overflow-hidden border-2 border-gray-200 group-hover:border-indigo-500 transition-all shadow-sm">
+                    <img :src="defaultImgUrl" class="h-full w-full object-cover"/>
+                </div>
+            </button>
+            <div v-if="isDropdownOpen" class="absolute right-0 mt-2  w-25 bg-white border rounded-lg shadow-lg z-50">
+                <button
+                    @click="logout"
+                    class="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg flex items-center"
+                >
+                    <i class="pi pi-sign-out mr-2"></i>
+                    Logout
+                </button>
+            </div>
         </div>
-      </transition> -->
     </div>
   </header>
+    <Dialog v-model:visible="visible" modal header="Cart Items" :style="{ width: '50rem' }" :breakpoints="{ '1199px': '75vw', '575px': '90vw' }">
+        <div class="p-6  min-h-screen">
+             <div v-for="(data, index) in cartDatas" :key="index">
+                <div class="bg-gray-100 rounded-xl p-6 mb-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                        <div>
+                            <img
+                                v-if="data.product && data.product.images && data.product.images.length > 0"
+                                :src="`http://127.0.0.1:8000/storage/${data.product.images[0].image}`"
+                                class="mx-auto rounded-lg object-cover mb-4"
+                            />
+                            <img 
+                                v-else 
+                                :src="defaultImgUrl" 
+                                class="w-[40%] mx-auto rounded-lg object-cover mb-4 opacity-50" 
+                            />
+                            </div>
+                        
+                        <div>
+                            <h5 class="text-2xl font-semibold mb-3">
+                                {{ data.product.name }}
+                            </h5>
+                            <p class="font-semibold mb-3">
+                                Size - {{ data.variant.size }}
+                            </p>
+                            <p class="font-semibold mb-3">
+                                Color - {{ data.variant.color }}
+                            </p>
+                            <div class="flex items-center gap-4 mb-6">
+                                <span class="font-medium">Quantity</span>
+
+                                <div class="flex border rounded">
+                                    <button class="px-3 py-1" @click="decreaseQty(data)"> - </button>
+                                    <span class="px-4 py-1">
+                                        {{ data.quantity }}
+                                    </span>
+                                    <button class="px-3 py-1" @click="increaseQty(data)"> + </button>
+                                </div>
+                            </div>
+                            <span class="text-2xl font-bold">₹{{ data.product.price - (data.product.discount_price || 0) }}</span>
+                            <div class="flex items-center gap-4 mb-6">
+                                <p>
+                                    <Button
+                                        label="Remove Item"
+                                        icon="pi pi-trash"
+                                        class="!bg-red-300 hover:!bg-red-400 text-white mt-5 px-4 py-2 rounded-lg"
+                                        @click="removeProductItem(data.id)"
+                                    />
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow p-6">
+                <div v-if="cartDatas.length > 0" class="mt-6 border-t pt-4">
+                    <div class="flex justify-between mb-2">
+                        <span class="text-gray-600">Subtotal</span>
+                        <span class="font-medium">₹{{ withoutDiscountTotal }}</span>
+                    </div>
+                    
+                    <div v-if="totalDiscount > 0" class="flex justify-between mb-2 text-green-600">
+                        <span>Total Discount</span>
+                        <span>- ₹{{ totalDiscount }}</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mt-4 p-4 bg-indigo-50 rounded-lg">
+                        <span class="text-lg font-bold">Total Amount</span>
+                        <span class="text-2xl font-black text-indigo-700">₹{{ finalTotal }}</span>
+                    </div>
+
+                    <Button 
+                        label="Checkout" 
+                        class="w-full mt-4 p-button-success h-12 text-lg" 
+                        @click="proceedToCheckout"
+                    />
+                </div>
+
+                <div v-else class="text-center py-10">
+                    <i class="pi pi-shopping-cart text-4xl text-gray-300 mb-3"></i>
+                    <p class="text-gray-500">Your cart is empty</p>
+                </div>
+            </div>
+        </div>
+    </Dialog>
 </template>
 
 <script setup>
@@ -68,15 +218,24 @@ import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
 import emitter from '@/eventBus';
 import defaultImgUrl from '@/assets/images/user_logo.png';
+import ecommerce from '@/assets/images/ecommerce.jpg';
 import 'primeicons/primeicons.css';
-
+import Button from 'primevue/button';
+import Badge from 'primevue/badge'
+import Dialog from 'primevue/dialog';
 const router = useRouter();
 const route = useRoute();
+const categories = ref([]);
+const loading = ref(false);
+const error = ref('');
+const cartCount = ref(0);
+const cartDatas = ref([]);
+const visible = ref(false);
+const selectedImage = ref('')
+import { toast } from 'vue3-toastify';
 
 const navigationTabs = [
-  { name: 'home', label: 'Home', path: '/home', icon: 'pi pi-home' },
-  { name: 'about', label: 'About', path: '/about', icon: 'pi pi-info-circle' },
-  { name: 'products', label: 'All Product', path: '/products-all', icon: 'pi pi-list' },
+  { name: 'products', label: 'All Product', path: '/products-all', icon: 'pi pi-list',  color: 'green' },
 ];
 
 const activeTab = computed(() => {
@@ -87,16 +246,8 @@ const activeTab = computed(() => {
 const handleTabClick = (tab) => {
   router.push(tab.path);
 };
-
-// --- Profile Image & Reactivity Fix ---
 const dynamicUrl = ref('');
 const imageVersion = ref(Date.now()); // Used to force image refresh
-
-const currentImageSrc = computed(() => {
-  if (!dynamicUrl.value) return defaultImgUrl;
-  // Appending a unique query param (cache-buster) ensures the image reloads
-  return `${dynamicUrl.value}?v=${imageVersion.value}`;
-});
 
 const fetchUserImage = async () => {
   try {
@@ -110,11 +261,74 @@ const fetchUserImage = async () => {
     console.error("Failed to load image", err);
   }
 };
+const fetchCategories = async () => {
+  try {
+    loading.value = true;
+    const token = localStorage.getItem('api_token');
 
+    const response = await axios.get('/api/categories', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json'
+      }
+    });
+
+    categories.value = response.data.data;
+  } catch (err) {
+    error.value = 'Failed to fetch categories';
+  } finally {
+    loading.value = false;
+  }
+};
+
+const parentCategories = computed(() => {
+  return categories.value.filter(cat => cat.parent_id === 1);
+});
+const selectedCategory = ref(null);
+
+const childCategories = computed(() => {
+  if (!selectedCategory.value) return [];
+  return categories.value.filter(
+    cat => cat.parent_id === selectedCategory.value.id
+  );
+});
+
+const openCategory = (cat) => {
+  selectedCategory.value = cat;
+};
 const isDropdownOpen = ref(false);
 const toggleDropdown = () => (isDropdownOpen.value = !isDropdownOpen.value);
 const closeDropdown = () => (isDropdownOpen.value = false);
 
+const fetchCartCount = async () => {
+  try {
+    const token = localStorage.getItem('api_token')
+
+    const res = await axios.get('/api/cart-count', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+    // console.log(res.data.cartData)
+
+    cartCount.value = res.data.count
+    cartDatas.value = res.data.cartData
+       
+  } catch (error) {
+    console.log('Cart count error')
+  }
+}
+const increaseQty = (item) => {
+  if (item) {
+    item.quantity++;
+  }
+};
+
+const decreaseQty = (item) => {
+  if (item && item.quantity > 1) {
+    item.quantity--;
+  }
+};
 const logout = async () => {
   const token = localStorage.getItem('api_token');
   try {
@@ -128,16 +342,53 @@ const logout = async () => {
     router.push('/');
   }
 };
+const removeProductItem = async (id) => {
+    try {
+        const token = localStorage.getItem('api_token');
+        const response = await axios.delete(`/api/cart-items/delete/${id}`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: 'application/json'
+            }
+        });
+
+        if (response.data.status) {
+            toast.success('Item removed from cart!');
+
+            cartDatas.value = cartDatas.value.filter(item => item.id !== id);
+
+            if (cartCount.value > 0) {
+                cartCount.value--;
+            }
+        }
+    } catch (error) {
+    }
+};
+
+const withoutDiscountTotal = computed(() => {
+
+});
+const totalCount = computed(() => {
+  return cartDatas.value.reduce((sum, products) => {
+   return  (sum + products.product.price * products.quantity);
+}, 0);
+});
+
+alert(totalCount)
+console.log(totalCount)
+// const cartCount = computed(() => cartDatas.value.length);
 
 onMounted(() => {
   fetchUserImage();
-  window.addEventListener('click', closeDropdown);
+  fetchCategories();
+  fetchCartCount();
   
-  // Update image and version when the 'image-updated' event fires
-  emitter.on('image-updated', (newUrl) => {
-    dynamicUrl.value = newUrl;
-    imageVersion.value = Date.now(); // Triggers re-render of currentImageSrc
-  });
+  window.addEventListener('click', closeDropdown);
+  emitter.on('cart-updated', fetchCartCount)
+//   emitter.on('image-updated', (newUrl) => {
+//     dynamicUrl.value = newUrl;
+//     imageVersion.value = Date.now();
+//   });
 });
 
 onUnmounted(() => {
@@ -145,3 +396,4 @@ onUnmounted(() => {
   emitter.off('image-updated');
 });
 </script>
+

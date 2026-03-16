@@ -92,11 +92,13 @@ const Schema = yup.object({
   name: yup.string().required('Product name is required'),
   description: yup.string().required('Description is required'),
   category_id: yup.string().required('Please select a category'),
+  brand_id: yup.string().required('Please select a brand'),
   price: yup.number().typeError('Price must be a number').required('Price is required'),
   sku: yup.string().required('SKU is required'),
 });
 
 const categories = ref([])
+const brands = ref([])
 const loading = ref(false)
 
 const fetchCategories = async () => {
@@ -109,8 +111,20 @@ const fetchCategories = async () => {
     } catch (error) { console.error(error) }
 }
 
+const fetchBrands = async () => {
+    try {
+      const token = localStorage.getItem('api_token')
+      const response = await axios.get('/api/products/brands', {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+      })
+      brands.value = response.data
+      console.log(brands.value)
+    } catch (error) {
+      console.error('Error fetching brands:', error)
+    }
+}
 const formData = ref({
-  name: '', description: '', category_id: null, price: null,
+  name: '', description: '', category_id: null, brand_id: null, price: null,
   discount_price: null, sku: '', quantity: 0, gender: '', is_active: true
 })
 
@@ -186,7 +200,8 @@ watch(hasVariants, (newVal) => { if (newVal) formData.value.quantity = 0; });
 
 onMounted(async () => {
   await fetchCategories();
-  await fetchProductData(); 
+  await fetchProductData();
+  await fetchBrands(); 
 })
 </script>
 
@@ -221,11 +236,26 @@ onMounted(async () => {
           
         </div>
 
-        <div class="mb-4">
+        <!-- <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700">Category</label>
             <Field name="category_id" as="select" v-model="formData.category_id" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border">
                 <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
             </Field>
+        </div> -->
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Category</label>
+                <Field name="category_id" as="select" v-model="formData.category_id" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border">
+                    <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+                </Field>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Brand</label>
+                <Field name="brand_id" as="select" v-model="formData.brand_id" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border">
+                    <option v-for="brand in brands" :key="brand.id" :value="brand.id">{{ brand.name }}</option>
+                </Field>
+                <ErrorMessage name="brand_id" class="text-red-500 text-sm mt-1 block" />
+            </div>
         </div>
 
         <div class="grid grid-cols-2 gap-4 mb-4">

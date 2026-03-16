@@ -17,6 +17,7 @@ import AddProduct from '@/views/products/AddProduct.vue';
 import EditProduct from '@/views/products/EditProduct.vue';
 import ProductList from '@/views/productdata/ProductList.vue';
 import UserLayout from '@/layouts/UserLayout.vue';
+import ProductDetail from '@/views/productdata/ProductDetail.vue';
 
 const routes = [
   { path: '/', name: 'main', component: Main,meta: { guestOnly: true } },
@@ -101,6 +102,13 @@ const routes = [
         name: 'ProductList',
         component: ProductList,
         meta: { requiresAuth: true }
+      },
+      {
+        path: '/product/:id',
+        name: 'ProductDetail',
+        component: ProductDetail,
+        meta: { requiresAuth: true }
+        
       },
     ],
   }
