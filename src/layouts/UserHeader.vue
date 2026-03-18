@@ -78,17 +78,6 @@
     </nav>
 
     <div class="relative flex items-center space-x-4">
-        <!-- <Button
-            icon="pi pi-shopping-cart"
-            class="p-button-rounded p-button-text w-14 h-14 [--p-icon-size:1.5rem]"
-            @click="router.push('/cart')"
-        />
-        <Badge 
-            v-if="cartCount > 0"
-            :value="cartCount"
-            severity="danger"
-            class="absolute -top-1 -right-1"
-        /> -->
         <Button
             icon="pi pi-shopping-cart"
             class="p-button-rounded p-button-text w-14 h-14 [--p-icon-size:1.5rem]"
@@ -163,7 +152,7 @@
                                     <button class="px-3 py-1" @click="increaseQty(data)"> + </button>
                                 </div>
                             </div>
-                            <span class="text-2xl font-bold">₹{{ data.product.price - (data.product.discount_price || 0) }}</span>
+                            <span class="text-2xl font-bold">₹{{ (data.product.price - (data.product.discount_price || 0)) * data.quantity }}</span>
                             <div class="flex items-center gap-4 mb-6">
                                 <p>
                                     <Button
@@ -318,17 +307,38 @@ const fetchCartCount = async () => {
     console.log('Cart count error')
   }
 }
+const updateQtyApi = async (item) => {
+    try {
+        const token = localStorage.getItem('api_token'); 
+        await axios.put(`/api/cart-items/updatequantity/${item.id}`, 
+        {
+            quantity: item.quantity
+        }, 
+        {
+            headers: {
+                Authorization: `Bearer ${token}` // This fixes the 401 error
+            }
+        });
+        fetchCartCount(); 
+    } catch (error) {
+        if (error.response && error.response.status === 401) {
+            console.error("Session expired. Please login again.");
+        }
+    }
+};
+
 const increaseQty = (item) => {
-  if (item) {
     item.quantity++;
-  }
+    updateQtyApi(item);
 };
 
 const decreaseQty = (item) => {
-  if (item && item.quantity > 1) {
-    item.quantity--;
-  }
+    if (item.quantity > 1) {
+        item.quantity--;
+        updateQtyApi(item);
+    }
 };
+
 const logout = async () => {
   const token = localStorage.getItem('api_token');
   try {
@@ -365,18 +375,28 @@ const removeProductItem = async (id) => {
     }
 };
 
+
 const withoutDiscountTotal = computed(() => {
-
-});
-const totalCount = computed(() => {
-  return cartDatas.value.reduce((sum, products) => {
-   return  (sum + products.product.price * products.quantity);
-}, 0);
+    return cartDatas.value.reduce((acc, item) => {
+        return acc + (item.product.price * item.quantity);
+    }, 0);
 });
 
-alert(totalCount)
-console.log(totalCount)
-// const cartCount = computed(() => cartDatas.value.length);
+const totalDiscount = computed(() => {
+    return cartDatas.value.reduce((acc, item) => {
+        const discount = item.product.discount_price || 0;
+        return acc + (discount * item.quantity);
+    }, 0);
+});
+
+const finalTotal = computed(() => {
+    return withoutDiscountTotal.value - totalDiscount.value;
+});
+
+const proceedToCheckout = () => {
+    visible.value = false;
+    router.push('/checkout'); 
+};
 
 onMounted(() => {
   fetchUserImage();
@@ -396,4 +416,6 @@ onUnmounted(() => {
   emitter.off('image-updated');
 });
 </script>
+
+
 

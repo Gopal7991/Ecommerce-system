@@ -35,9 +35,16 @@ export default defineConfig({
     },
   },
   server: {
+    port: 5173,
     proxy: {
+      // Forward /storage and /api requests to Laravel
+      '/storage': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+      },
       '/api': {
-        target: 'http://localhost:8000', // backend server
+        target: 'http://localhost:8000',
         changeOrigin: true,
         secure: false,
       }
