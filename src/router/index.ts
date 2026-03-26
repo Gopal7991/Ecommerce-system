@@ -19,6 +19,9 @@ import ProductList from '@/views/productdata/ProductList.vue';
 import UserLayout from '@/layouts/UserLayout.vue';
 import ProductDetail from '@/views/productdata/ProductDetail.vue';
 import Checkout from '@/views/productdata/Checkout.vue';
+import OrderHistory from '@/views/productdata/OrderHistory.vue';
+import CouponView from '@/views/coupons/CouponView.vue';
+import AddCoupon from '@/views/coupons/AddCoupon.vue';
 
 const routes = [
   { path: '/', name: 'main', component: Main,meta: { guestOnly: true } },
@@ -91,6 +94,17 @@ const routes = [
         component: EditProduct,
         meta: { requiresAuth: true }
       },
+      {
+        path: 'coupons',
+        component:CouponView ,
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'add-coupon',
+        name: 'AddCoupon',
+        component: AddCoupon,
+        meta: { requiresAuth: true }
+      },
     ],
   },
   {
@@ -118,6 +132,12 @@ const routes = [
         meta: { requiresAuth: true }
         
       },
+      {
+        path: '/order-history',
+        name: 'OrderHistory',
+        component: OrderHistory,
+        meta: { requiresAuth: true}
+      }
     ],
   }
 ];

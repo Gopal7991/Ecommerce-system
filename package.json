@@ -11,10 +11,22 @@
     "type-check": "vue-tsc --build"
   },
   "dependencies": {
+    "@pqina/pintura": "^8.96.1",
+    "@primevue/themes": "^4.5.4",
+    "@stripe/stripe-js": "^8.10.0",
     "axios": "^1.13.5",
+    "filepond": "^4.32.12",
+    "filepond-plugin-file-poster": "^2.5.2",
+    "filepond-plugin-image-crop": "^2.0.6",
+    "filepond-plugin-image-edit": "^1.6.3",
+    "filepond-plugin-image-preview": "^4.6.12",
+    "filepond-plugin-image-transform": "^3.8.7",
+    "pinia": "^3.0.4",
     "primeicons": "^7.0.0",
+    "primevue": "^4.5.4",
     "vee-validate": "^4.15.1",
     "vue": "^3.5.28",
+    "vue-filepond": "^7.0.4",
     "vue-router": "^4.6.4",
     "vue3-toastify": "^0.2.8",
     "yup": "^1.7.1"

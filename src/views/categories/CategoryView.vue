@@ -67,9 +67,10 @@
                   No categories found.
                 </td>
               </tr>
+              <!-- v-for="category in paginatedCategories" -->
               <tr
                 v-else
-                v-for="category in paginatedCategories"
+                v-for="category in paginatedCategoriesData"
                 :key="category.id"
                 class="border-b hover:bg-gray-50"
               >
@@ -156,6 +157,22 @@ import Button from 'primevue/button';
 import axios from 'axios'; 
 import { useDialog } from 'primevue/usedialog';
 
+
+// import { useCategoryStore } from '../stores/categoryStore'
+import { useCategoryStore } from '../../stores/categoryStore' 
+import { storeToRefs } from 'pinia'
+const categoryStore = useCategoryStore()
+const { categoriesData, loading1 } = storeToRefs(categoryStore)
+console.log('Category store is', categoriesData.value)
+
+// const { categoriesData } = storeToRefs(categoryStore)
+
+onMounted(async () => {
+  await categoryStore.fetchCategoriesData()
+  console.log('Data is now loaded:', categoriesData.value)
+})
+
+
 const categories = ref([]);
 const loading = ref(true);
 const error = ref(null);
@@ -176,8 +193,11 @@ const openDeleteDialog = (id, childrenArray) => {
       : childrenArray.split(' ->');
   visible.value = true;
 };
-const paginatedCategories = computed(() => {
-  return categories.value.slice(first.value, first.value + rows.value);
+// const paginatedCategories = computed(() => {
+//   return categories.value.slice(first.value, first.value + rows.value);
+// });
+const paginatedCategoriesData = computed(() => {
+  return categoriesData.value.slice(first.value, first.value + rows.value);
 });
 const onPage = (event) => {
     first.value = event.first;

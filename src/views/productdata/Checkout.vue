@@ -27,50 +27,97 @@ const errorMessage = ref(null);
 const navigationTabs = [
   { name: 'products', label: 'All Product', path: '/products-all', icon: 'pi pi-list',  color: 'green' },
 ];
-// onMounted(async () => {
-//   stripe.value = await loadStripe('pk_test_51TBb04CTl65zLd920GCAmNHJ0OQdoZJ1W6qfck9XlyQOZ4KVDLckeQv56hW5CrGMoMxhvLUozld2ajUn5fIR6phj00LwrUyTnV');
-//     try {        
-//         if (!stripe.value) throw new Error("Stripe SDK failed to load");
-
-//         const token = localStorage.getItem('api_token');
-//         const { data } = await axios.post('/api/create-payment-intent', {}, {
-//             headers: { Authorization: `Bearer ${token}` }
-//         });
-
-//         if (!data.clientSecret) throw new Error("Missing client secret from server.");
-
-//         await nextTick(); 
-
-//         elements.value = stripe.value.elements({ clientSecret: data.clientSecret });
-        
-//         const paymentElement = elements.value.create('payment');
-//         paymentElement.mount('#payment-element');
-        
-//         stripeLoaded.value = true;
-//     } catch (e) {
-//         console.error("Stripe Error:", e);
-//         errorMessage.value = e.message || "Failed to load payment system.";
-//     }
-// });
 
 // const handlePayment = async () => {
-//   if (!stripe.value || !elements.value) return;
+//   try {
+//     loading.value = true;
+//     const token = localStorage.getItem('api_token'); // Get your auth token
 
-//   loading.value = true;
-//   errorMessage.value = null;
+//     const { data } = await axios.post('/api/checkout', 
+//       { amount: finalTotal.value }, 
+//       { headers: { Authorization: `Bearer ${token}` } }
+//     );
 
-//   const { error } = await stripe.value.confirmPayment({
-//     elements: elements.value,
-//     confirmParams: {
-//       return_url: window.location.origin + '/payment-success',
-//     },
-//   });
-
-//   if (error) {
-//     errorMessage.value = error.message;
+//     if (data.url) {
+//       // Best Practice: Redirect directly to the Stripe-hosted URL
+//       window.location.href = data.url;
+//     } else if (data.id && stripe.value) {
+//       // Fallback: Use the Session ID with the Stripe SDK
+//       const { error } = await stripe.value.redirectToCheckout({ sessionId: data.id });
+//       if (error) throw error;
+//     }
+//   } catch (err) {
+//     console.error("Checkout Error:", err);
+//     toast.error(err.response?.data?.message || "Checkout failed");
+//   } finally {
 //     loading.value = false;
 //   }
 // };
+const handlePayment = async () => {
+  try {
+    if (!validateForm()) return;
+
+    loading.value = true;
+    const token = localStorage.getItem('api_token');
+
+    const payload = {
+      amount: finalTotal.value,
+      shipping: form.value,
+      items: formattedCart.value
+    };
+
+    const { data } = await axios.post('/api/checkout', payload, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (data.url) {
+      window.location.href = data.url;
+    } else if (data.id && stripe.value) {
+      const { error } = await stripe.value.redirectToCheckout({
+        sessionId: data.id
+      });
+      if (error) throw error;
+    }
+
+  } catch (err) {
+    console.error("Checkout Error:", err);
+    toast.error(err.response?.data?.message || "Checkout failed");
+  } finally {
+    loading.value = false;
+  }
+};
+const form = ref({
+  name: '',
+  address: '',
+  city: '',
+  state: '',
+  zip: '',
+  email: '',
+  phone: ''
+});
+
+const formattedCart = computed(() => {
+  return cartDatas.value.map(item => ({
+    product_id: item.product.id,
+    product_variant_id: item.product_variant_id,
+    name: item.product.name,
+    price: item.product.price,
+    discount_price: item.product.discount_price || 0,
+    quantity: item.quantity,
+    total: (item.product.price - (item.product.discount_price || 0)) * item.quantity
+  }));
+});
+const validateForm = () => {
+  const f = form.value;
+
+  if (!f.name || !f.address || !f.city || !f.state || !f.zip || !f.email || !f.phone) {
+    toast.error("Please fill all fields");
+    return false;
+  }
+
+  return true;
+};
+
 const activeTab = computed(() => {
   const current = navigationTabs.find(t => route.path.startsWith(t.path));
   return current ? current.name : '';
@@ -146,6 +193,7 @@ const fetchCartCount = async () => {
 
     cartCount.value = res.data.count
     cartDatas.value = res.data.cartData
+    // console.log(cartDatas.value);
        
   } catch (error) {
     console.log('Cart count error')
@@ -268,37 +316,37 @@ onUnmounted(() => {
                 <form class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
-                        <input type="text" placeholder="Full name" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <input type="text" v-model="form.name" placeholder="Enter Full Name" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Street Address</label>
-                        <input type="text" placeholder="123 Main St" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <input type="text" v-model="form.address" placeholder="Enter Address" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
                     </div>
 
                     <div class="grid grid-cols-3 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">City</label>
-                            <input type="text" placeholder="Ahmedabad" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <input type="text" v-model="form.city" placeholder="Enter City" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">State</label>
-                            <input type="text" placeholder="Gujarat" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <input type="text" v-model="form.state"  placeholder="Enter State" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">ZIP Code</label>
-                            <input type="text" placeholder="10001" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <input type="text" v-model="form.zip" placeholder="Enter Zip Code" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
                         </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                            <input type="email" placeholder="test@example.com" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <input type="email" v-model="form.email" placeholder="Enter Email" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">Phone</label>
-                            <input type="tel" placeholder="(555) 000-0000" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <input type="tel" v-model="form.phone" placeholder="Enter Phone Number" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
                         </div>
                     </div>
 
@@ -344,7 +392,7 @@ onUnmounted(() => {
                         </div>
                         <div class="flex justify-between">
                             <span class="text-slate-500">Estimated Tax</span>
-                            <span class="font-medium text-slate-700">₹12.00</span>
+                            <span class="font-medium text-slate-700">₹00.00</span>
                         </div>
                     </div>
 

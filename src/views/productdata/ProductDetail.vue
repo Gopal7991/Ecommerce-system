@@ -40,6 +40,7 @@ const fetchProductData = async () => {
     })
 
     product.value = response.data
+    console.log('check variant id',product.value)
     if (product.value.images && product.value.images.length > 0) {
         selectedImage.value = product.value.images[0].image
     }
@@ -76,6 +77,20 @@ const fetchProductData = async () => {
     toast.error("Error loading data")
   }
 }
+const currentVariant = computed(() => {
+  if (!selecteduserColor.value || !selecteduserSize.value) return null;
+  
+  return product.value.variants.find(v => 
+    v.color.toLowerCase() === selecteduserColor.value.toLowerCase() && 
+    v.size.toLowerCase() === selecteduserSize.value.toLowerCase()
+  );
+});
+
+const isOutOfStock = computed(() => {
+  if (!selecteduserColor.value || !selecteduserSize.value) return false;
+    return currentVariant.value ? currentVariant.value.quantity <= 0 : true;
+});
+
 const finalPrice = computed(() => {
   if (!product.value.price) return 0
   return product.value.price - (product.value.discount_price || 0)
@@ -84,18 +99,22 @@ const handleColorSelection  = async (selectcolor) => {
   try {
     selecteduserColor.value =  selectcolor
   } catch (error) {
-    toast.error("Failed to add cart")
+    toast.error("Please Select Color")
   }
 }
 const handleSizeSelection = async (selectsize) => {
     try {
     selecteduserSize.value =  selectsize
   } catch (error) {
-    toast.error("Failed to add cart")
+    toast.error("Please Select Size")
   }
 }
 const addToCart = async () => {
   try {
+    if (isOutOfStock.value) {
+        toast.error("This variant is currently out of stock");
+        return;
+    }
     const token = localStorage.getItem('api_token')
   
     const payload = {
@@ -105,17 +124,21 @@ const addToCart = async () => {
         quantity: quantity.value
     }
 
-    await axios.post('/api/cart-items', payload, {
+    const response =  await axios.post('/api/cart-items', payload, {
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: 'application/json'
       }
     })
-    emitter.emit('cart-updated')
-    toast.success("Product added to cart")
-
+    if (response.data.status == false) {
+      toast.error(response.data.message)
+    } else {
+      emitter.emit('cart-updated')
+      toast.success("Product added to cart")
+    }
+    
   } catch (error) {
-    toast.error("Failed to add cart")
+    toast.error("Please select Color or Size")
   }
 }
 onMounted(() => {
@@ -186,7 +209,8 @@ onMounted(() => {
                             <div
                                 v-for="color in selectedColors"
                                 :key="color.value"
-                                class="w-6 h-6 rounded-full border"
+                                class="w-8 h-8 rounded-full border-2 cursor-pointer transition-all"
+                                :class="selecteduserColor === color.value ? 'border-indigo-600 scale-110' : 'border-transparent'"
                                 :style="{ background: color.label }"
                                 @click="handleColorSelection(color.value)" 
                             ></div>
@@ -198,11 +222,11 @@ onMounted(() => {
 
                         <div class="flex gap-2">
                             <div
-                            v-for="size in selectedSizes"
-                            :key="size.value"
-                            @click="handleSizeSelection(size.value)"
-                            class="px-3 py-1 border rounded cursor-pointer"
-                            :class="selectedSize === size.value ? 'bg-blue-500 text-white' : ''"
+                                v-for="size in selectedSizes"
+                                :key="size.value"
+                                @click="handleSizeSelection(size.value)"
+                                class="px-3 py-1 border rounded cursor-pointer"
+                                :class="selecteduserSize === size.value ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700'"
                             >
                             {{ size.label }}
                             </div>
@@ -219,6 +243,19 @@ onMounted(() => {
                             <button class="px-3 py-1" @click="increaseQty"> + </button>
                         </div>
                     </div>
+                    <div class="flex items-center gap-3 mb-3">
+                        <span v-if="selecteduserColor && selecteduserSize">
+                            <span v-if="isOutOfStock" class="bg-red-500 text-white px-3 py-1 rounded-full text-sm">
+                                Out of Stock
+                            </span>
+                            <span v-else class="bg-green-500 text-white px-3 py-1 rounded-full text-sm">
+                                In Stock ({{ currentVariant.quantity }} left)
+                            </span>
+                        </span>
+                        <span v-else class="text-gray-500 text-sm italic">
+                            Please select color and size to check availability
+                        </span>
+                    </div>
 
                     <hr class="mb-6">
                     <div class="flex gap-4 mb-6">
@@ -229,9 +266,10 @@ onMounted(() => {
                         <Button
                             label="Add To Cart"
                             icon="pi pi-shopping-cart"
-                            class="!bg-orange-300 hover:!bg-orange-400 text-white px-6 py-3 rounded-lg"
+                            class="!bg-orange-400 hover:!bg-orange-500 text-white px-6 py-3 rounded-lg"
                             @click="addToCart"
                         />
+
                     </div>
                     <div class="text-gray-500">
                         <p>Dispatched in 2–3 weeks</p>

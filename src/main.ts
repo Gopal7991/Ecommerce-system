@@ -1,6 +1,7 @@
 import './assets/main.css'
 
 import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import Vue3Toastify from 'vue3-toastify';
@@ -10,7 +11,7 @@ import { PrimeVue } from '@primevue/core';
 import DialogService from 'primevue/dialogservice';
 import Aura from '@primeuix/themes/aura';
 
-
+const pinia = createPinia()
 const app = createApp(App)
 
 app.use(router)
@@ -23,4 +24,5 @@ app.use(PrimeVue,{
     }
 })
 app.use(DialogService)
+app.use(pinia)
 app.mount('#app')

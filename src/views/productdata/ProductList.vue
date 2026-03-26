@@ -27,14 +27,24 @@
         <div v-if="successMessage" class="mb-4 p-3 bg-green-100 text-green-700 rounded" >
             {{ successMessage }}
         </div>
-        <!-- <div class="flex justify-between items-center mb-6">
+        <div class="flex justify-between items-center mb-6">
             <input
             v-model="search"
             type="text"
             placeholder="Search Product"
             class="border rounded-lg px-4 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-indigo-400"
             />
-
+            <div class="flex gap-4 items-center">
+                <select v-model="selectedBrand" class="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 ml-180">
+                  <option value="" disabled>Select a brand</option>
+                  <option 
+                    v-for="brand in brands" 
+                    :key="brand.id" 
+                    :value="brand.id">
+                    {{ brand.name }}
+                  </option>
+                </select>
+            </div>
             <div class="flex gap-4 items-center">
             <select 
                 v-model="sortOption" 
@@ -47,7 +57,7 @@
                 <option value="price_high_low">Price: High → Low</option>
             </select>
             </div>
-        </div> -->
+        </div>
         <div class="min-h-screen bg-gray-100 py-7 px-4">
             <div class="flex flex-wrap -mx-3">
                 <div v-for="product in filteredProducts" :key="product.id" class="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 px-3 mb-6">
@@ -164,6 +174,10 @@ import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css";
 import FilePondPluginImageTransform from "filepond-plugin-image-transform";
 import { openDefaultEditor } from "@pqina/pintura";
 import "@pqina/pintura/pintura.css";
+const selectedBrand = ref('');
+import { useRoute } from 'vue-router';
+const route = useRoute();
+const productId = route.query.sub_category_id;
 
 const FilePond = vueFilePond(
   FilePondPluginImagePreview,
@@ -171,18 +185,6 @@ const FilePond = vueFilePond(
   FilePondPluginImageEdit,
   FilePondPluginImageTransform
 );
-// const images = ref([
-//   "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab",
-//   "https://images.unsplash.com/photo-1541099649105-f69ad21f3246",
-//   "https://images.unsplash.com/photo-1542291026-7eec264c27ff",
-//   "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=600&q=80"
-// ]);
-
-// const responsiveOptions = ref([
-//   { breakpoint: "1400px", numVisible: 3, numScroll: 1 },
-//   { breakpoint: "992px", numVisible: 2, numScroll: 1 },
-//   { breakpoint: "576px", numVisible: 1, numScroll: 1 }
-// ]);
 const search = ref('');
 
 const products = ref([]);
@@ -198,8 +200,30 @@ const filteredProducts = computed(() => {
   );
 });
 
+function useBrands() {
+  const brands = ref([])
+  const fetchBrands = async () => {
+    try {
+      const token = localStorage.getItem('api_token')
+      const response = await axios.get('/api/products/brands', {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+      })
+      brands.value = response.data
+      console.log(brands.value)
+    } catch (error) {
+      console.error('Error fetching brands:', error)
+    }
+  }
+  return { brands, fetchBrands }
+}
+// const selectBrandValue = () => {
+//   // alert('Selected: ' + selectedBrand.value);
+// };
+
+const { brands, fetchBrands } = useBrands()
 
 const fetchProducts = async () => {
+
   try {
     loading.value = true;
     const token = localStorage.getItem('api_token');
@@ -219,7 +243,10 @@ const fetchProducts = async () => {
       params: {
         sort_by,
         sort_order,
-        search: search.value
+        search: search.value,
+        brand_id: selectedBrand.value,
+        sub_category_id: route.query.sub_category_id 
+        
       }
     });
 
@@ -239,13 +266,19 @@ const fetchProducts = async () => {
   }
 };
 
-watch([sortOption, search], () => {
+watch([sortOption, search, selectedBrand], () => {
   fetchProducts();
 });
 
-
+watch(
+  () => route.query.sub_category_id,
+  () => {
+    fetchProducts();
+  }
+);
 onMounted(() => {
   fetchProducts();
+  fetchBrands();
   
 });
 </script>
@@ -312,3 +345,27 @@ onMounted(() => {
 }
 </style>
 
+
+
+// // Watch for changes in the URL query strings
+// watch(() => route.query, () => {
+//     fetchProducts();
+// }, { deep: true });
+
+// const fetchProducts = async () => {
+//     const params = {
+//         search: route.query.search || '',
+//         brand_id: route.query.brand_id || '',
+//         category_id: route.query.category_id || '',
+//         sub_category_id: route.query.sub_category_id || '',
+//         // ... your other params
+//     };
+    
+//     const response = await axios.get('/api/products', { params });
+//     products.value = response.data.data;
+// };
+
+// // Run once on mount
+// onMounted(() => {
+//     fetchProducts();
+// });

@@ -18,27 +18,6 @@
             <span v-if="tab.icon" :class="[tab.icon, 'mr-2']"></span>
             {{ tab.label }}
         </button>
-        <!-- <div class="relative flex">
-            <button
-                v-for="cat in parentCategories"
-                :key="cat.id"
-                @click="openCategory(cat)"
-                class="px-4 h-full flex items-center text-sm font-medium text-gray-600 hover:text-indigo-600"
-            >
-                {{ cat.name }}
-            </button>
-
-            <div v-if="childCategories.length" class="absolute top-10 left-0 bg-white shadow-lg rounded-md w-48 z-50">
-                <button
-                    v-for="child in childCategories"
-                    :key="child.id"
-                    @click="router.push(`/category/${child.id}`)"
-                    class="block w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-indigo-50"
-                >
-                    {{ child.name }}
-                </button>
-            </div>
-        </div> -->
         <div class="flex">
             <div
                 v-for="cat in parentCategories"
@@ -56,10 +35,18 @@
                 v-if="selectedCategory && selectedCategory.id === cat.id"
                 class="absolute top-9 left-0 mt-1 bg-white shadow-lg rounded-md w-48 z-50"
                 >
-                <button
+                <!-- <button
                     v-for="child in childCategories"
                     :key="child.id"
                     @click="router.push(`/category/${child.id}`)"
+                    class="block w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-indigo-50"
+                >
+                    {{ child.name }}
+                </button> -->
+                <button
+                    v-for="child in childCategories"
+                    :key="child.id"
+                    @click="router.push({ path: '/products-all', query: { sub_category_id: child.id } })"
                     class="block w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-indigo-50"
                 >
                     {{ child.name }}
@@ -84,14 +71,19 @@
             @click="visible = true"
             
         />
-
         <Badge
             v-if="cartCount > 0"
             :value="cartCount"
             severity="success"
             class="absolute -top-1 "
         />
-
+        <router-link to="/order-history" class="no-underline">
+          <Button 
+            icon="pi pi-history" 
+            class="p-button-rounded p-button-text w-14 h-14 [--p-icon-size:1.25rem]" 
+            v-tooltip.bottom="'View History'"
+          />
+        </router-link>
         <div class="relative">
             <button 
                 @click.stop="toggleDropdown" 
@@ -113,7 +105,23 @@
         </div>
     </div>
   </header>
-    <Dialog v-model:visible="visible" modal header="Cart Items" :style="{ width: '50rem' }" :breakpoints="{ '1199px': '75vw', '575px': '90vw' }">
+    <!-- <Dialog v-model:visible="visible" modal header="Cart Items" :style="{ width: '50rem' }" :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"> -->
+    <Dialog 
+        v-model:visible="visible" 
+        modal 
+        header="Cart Items" 
+        :style="{ width: '50rem' }" 
+        :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"
+        :contentStyle="{ padding: '0' }" 
+    >
+    <div v-if="msgValue" class="sticky top-0 z-50 w-full p-2 bg-white border-b">
+        <Message v-if="msgValue === 'sold_out'" severity="error" @close="msgValue = ''">
+            <!-- Using Tailwind text-red-600 -->
+            <span class="font-bold text-red-600">Remove sold-out items first</span>
+        </Message>
+    </div>
+
+
         <div class="p-6  min-h-screen">
              <div v-for="(data, index) in cartDatas" :key="index">
                 <div class="bg-gray-100 rounded-xl p-6 mb-6">
@@ -141,6 +149,7 @@
                             <p class="font-semibold mb-3">
                                 Color - {{ data.variant.color }}
                             </p>
+
                             <div class="flex items-center gap-4 mb-6">
                                 <span class="font-medium">Quantity</span>
 
@@ -152,13 +161,16 @@
                                     <button class="px-3 py-1" @click="increaseQty(data)"> + </button>
                                 </div>
                             </div>
+                            <div v-if="data.variant.quantity === 0" class="text-red-500 text-sm font-bold">
+                                Out of Stock
+                            </div>
                             <span class="text-2xl font-bold">₹{{ (data.product.price - (data.product.discount_price || 0)) * data.quantity }}</span>
                             <div class="flex items-center gap-4 mb-6">
                                 <p>
                                     <Button
                                         label="Remove Item"
                                         icon="pi pi-trash"
-                                        class="!bg-red-300 hover:!bg-red-400 text-white mt-5 px-4 py-2 rounded-lg"
+                                        class="!bg-red-400 hover:!bg-red-500 text-white mt-5 px-4 py-2 rounded-lg"
                                         @click="removeProductItem(data.id)"
                                     />
                                 </p>
@@ -202,7 +214,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
 import emitter from '@/eventBus';
@@ -215,6 +227,7 @@ import Dialog from 'primevue/dialog';
 const router = useRouter();
 const route = useRoute();
 const categories = ref([]);
+const products = ref([]);
 const loading = ref(false);
 const error = ref('');
 const cartCount = ref(0);
@@ -222,7 +235,11 @@ const cartDatas = ref([]);
 const visible = ref(false);
 const selectedImage = ref('')
 import { toast } from 'vue3-toastify';
-
+import { useCategoryStore } from '../stores/categoryStore' 
+import { storeToRefs } from 'pinia'
+const categoryStore = useCategoryStore()
+const { categoriesData, loading1 } = storeToRefs(categoryStore)
+const msgValue = ref('');
 const navigationTabs = [
   { name: 'products', label: 'All Product', path: '/products-all', icon: 'pi pi-list',  color: 'green' },
 ];
@@ -262,7 +279,8 @@ const fetchCategories = async () => {
       }
     });
 
-    categories.value = response.data.data;
+    // categories.value = response.data.data;
+    categories.value = '';
   } catch (err) {
     error.value = 'Failed to fetch categories';
   } finally {
@@ -271,19 +289,29 @@ const fetchCategories = async () => {
 };
 
 const parentCategories = computed(() => {
-  return categories.value.filter(cat => cat.parent_id === 1);
+  return categoriesData.value.filter(cat => cat.parent_id === 1);
 });
 const selectedCategory = ref(null);
 
 const childCategories = computed(() => {
   if (!selectedCategory.value) return [];
-  return categories.value.filter(
+  return categoriesData.value.filter(
     cat => cat.parent_id === selectedCategory.value.id
   );
 });
 
-const openCategory = (cat) => {
-  selectedCategory.value = cat;
+// const openCategory = (cat) => {
+//   selectedCategory.value = cat;
+// };
+const openCategory = async (cat) => {
+  if (selectedCategory.value?.id === cat.id) {
+    selectedCategory.value = null; // Toggle off if clicked again
+  } else {
+    selectedCategory.value = cat;
+    // Optional: Fetch children from API if not already in 'cat' object
+    // const res = await axios.get(`/api/categories/${cat.id}/children`);
+    // childCategories.value = res.data;
+  }
 };
 const isDropdownOpen = ref(false);
 const toggleDropdown = () => (isDropdownOpen.value = !isDropdownOpen.value);
@@ -298,7 +326,7 @@ const fetchCartCount = async () => {
         Authorization: `Bearer ${token}`
       }
     })
-    // console.log(res.data.cartData)
+    console.log('cart item is', res.data.cartData)
 
     cartCount.value = res.data.count
     cartDatas.value = res.data.cartData
@@ -376,6 +404,7 @@ const removeProductItem = async (id) => {
 };
 
 
+
 const withoutDiscountTotal = computed(() => {
     return cartDatas.value.reduce((acc, item) => {
         return acc + (item.product.price * item.quantity);
@@ -393,11 +422,27 @@ const finalTotal = computed(() => {
     return withoutDiscountTotal.value - totalDiscount.value;
 });
 
+const hasSoldOutItems = computed(() => {
+  return cartDatas.value.some(item => item.variant.quantity === 0);
+});
 const proceedToCheckout = () => {
+    if(hasSoldOutItems)
+    {
+        msgValue.value = 'sold_out';
+        setTimeout(() => {
+            msgValue.value = '';
+        }, 3000); 
+        // toast.error("Remove sold-out items first");
+        return;
+    }
+    
     visible.value = false;
     router.push('/checkout'); 
 };
-
+onMounted(async () => {
+  await categoryStore.fetchCategoriesData()
+  // console.log('Data is now loaded:', categoriesData.value)
+})
 onMounted(() => {
   fetchUserImage();
   fetchCategories();
@@ -415,6 +460,30 @@ onUnmounted(() => {
   window.removeEventListener('click', closeDropdown);
   emitter.off('image-updated');
 });
+const fetchProducts = async () => {
+    const params = {
+        category_id: route.query.category_id,
+        sub_category_id: route.query.sub_category_id,
+        search: route.query.search,
+        // ... other params
+    };
+    const token = localStorage.getItem('api_token'); 
+    const response = await axios.get('/api/products', { 
+        params: params, // Pass your params object here
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+        }
+    });
+    products.value = response.data.data;
+};
+
+// watch(() => route.params.id, (newId) => {
+//    fetchProducts(newId);
+// });
+watch(() => route.query, () => {
+    fetchProducts();
+})
 </script>
 
 

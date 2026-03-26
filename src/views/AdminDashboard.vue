@@ -1,8 +1,31 @@
 <script setup>
-import { onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
+import axios from 'axios';
 import { toast } from 'vue3-toastify';
 
+const orders = ref([]);
+const users = ref([]);
+const ordersamount = ref([]);
+
+const successMessage = ref(null);
+const fetchDashboardData = async () => {
+  try {
+    const token = localStorage.getItem('api_token');
+    const res = await axios.get('/api/dashboard-data', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    orders.value = res.data.count;
+    users.value = res.data.users
+    ordersamount.value = res.data.ordersamount
+       
+  } catch (error) {
+    console.error('Error fetching order:', error);
+  }
+}
 onMounted(() => {
+  fetchDashboardData();
   const successMsg = sessionStorage.getItem('toastMsg');
   if (successMsg) {
     toast.success(successMsg, {
@@ -19,19 +42,20 @@ onMounted(() => {
       
       <div class="flex-1 bg-white p-5 rounded-lg text-center shadow-sm">
         <h4 class="font-semibold">Total Orders</h4>
-        <!-- <p>25</p> -->
+        <p>{{ orders }}</p>
       </div>
 
       <div class="flex-1 bg-white p-5 rounded-lg text-center shadow-sm">
         <h4 class="font-semibold">Total Users</h4>
-        <!-- <p>120</p> -->
+        <p>{{ users }}</p>
       </div>
 
       <div class="flex-1 bg-white p-5 rounded-lg text-center shadow-sm">
         <h4 class="font-semibold">Revenue</h4>
-        <!-- <p>$1,500</p> -->
+        <p>₹ {{ ordersamount }}</p>
       </div>
       
     </div>
   </div>
 </template>
+
