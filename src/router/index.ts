@@ -22,6 +22,7 @@ import Checkout from '@/views/productdata/Checkout.vue';
 import OrderHistory from '@/views/productdata/OrderHistory.vue';
 import CouponView from '@/views/coupons/CouponView.vue';
 import AddCoupon from '@/views/coupons/AddCoupon.vue';
+import EditCoupon from '@/views/coupons/EditCoupon.vue';
 
 const routes = [
   { path: '/', name: 'main', component: Main,meta: { guestOnly: true } },
@@ -103,6 +104,12 @@ const routes = [
         path: 'add-coupon',
         name: 'AddCoupon',
         component: AddCoupon,
+        meta: { requiresAuth: true }
+      },
+      {
+        path: '/edit-coupon/:id',
+        name: 'EditCoupon',
+        component: EditCoupon,
         meta: { requiresAuth: true }
       },
     ],

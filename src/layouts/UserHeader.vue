@@ -161,10 +161,16 @@
                                     <button class="px-3 py-1" @click="increaseQty(data)"> + </button>
                                 </div>
                             </div>
+                           
                             <div v-if="data.variant.quantity === 0" class="text-red-500 text-sm font-bold">
                                 Out of Stock
                             </div>
-                            <span class="text-2xl font-bold">₹{{ (data.product.price - (data.product.discount_price || 0)) * data.quantity }}</span>
+                            
+                             <div class="flex items-center gap-3 mb-4">
+                                <span class="line-through text-gray-400 text-lg">₹{{data.product.price}}</span>
+                                <span class="text-2xl font-bold">₹{{ (data.product.price - (itemDiscountMap[data.id]?.toFixed(2) || 0)) * data.quantity }} </span> 
+                            </div>
+                            <span v-if="discountSet.has(Number(data.id))" class="text-green-600 text-sm font-bold"> Discount: ₹{{ itemDiscountMap[data.id]?.toFixed(2) }}</span>
                             <div class="flex items-center gap-4 mb-6">
                                 <p>
                                     <Button
@@ -187,9 +193,9 @@
                         <span class="font-medium">₹{{ withoutDiscountTotal }}</span>
                     </div>
                     
-                    <div v-if="totalDiscount > 0" class="flex justify-between mb-2 text-green-600">
+                    <div v-if="CartDiscountamount > 0" class="flex justify-between mb-2 text-green-600">
                         <span>Total Discount</span>
-                        <span>- ₹{{ totalDiscount }}</span>
+                        <span>- ₹{{ CartDiscountamount }}</span>
                     </div>
                     
                     <div class="flex justify-between items-center mt-4 p-4 bg-indigo-50 rounded-lg">
@@ -231,6 +237,9 @@ const products = ref([]);
 const loading = ref(false);
 const error = ref('');
 const cartCount = ref(0);
+const CartDiscountamount = ref(0);
+const DiscountProductApplied = ref([]);
+const isApplied = ref(false);
 const cartDatas = ref([]);
 const visible = ref(false);
 const selectedImage = ref('')
@@ -248,12 +257,64 @@ const activeTab = computed(() => {
   const current = navigationTabs.find(t => route.path.startsWith(t.path));
   return current ? current.name : '';
 });
+const showInput = ref(false) 
+const couponCode = ref('')
+const message = ref('')
 
+const applyCoupon = async () => {
+  try {
+    const token = localStorage.getItem('api_token')
+
+    const response = await axios.post('/api/coupons/apply-coupon', 
+      { code: couponCode.value }, 
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    CartDiscountamount.value = response.data.discount || 0;
+    DiscountProductApplied.value = response.data.appliedItemIds || [];
+    message.value = response.data.message || '';
+
+    isApplied.value = true;
+
+  } catch (error) {
+    message.value = 'Invalid or expired coupon.';
+    isApplied.value = false;
+  }
+};
+const discountSet = computed(() => {
+  return new Set((DiscountProductApplied.value || []).map(Number));
+});
+const itemDiscountMap = computed(() => {
+  const appliedIds = new Set((DiscountProductApplied.value || []).map(Number));
+
+  const appliedItems = cartDatas.value.filter(item =>
+    appliedIds.has(Number(item.id)) 
+
+  );
+
+  const total = appliedItems.reduce((sum, item) => {
+    return sum + (item.product.price * item.quantity);
+  }, 0);
+
+  const map = {};
+
+  appliedItems.forEach(item => {
+    const itemTotal = item.product.price * item.quantity;
+
+    const ratioDiscount = total > 0
+      ? (itemTotal / total) * CartDiscountamount.value
+      : 0;
+
+    map[item.id] = Math.round(ratioDiscount);
+  });
+
+  return map;
+});
 const handleTabClick = (tab) => {
   router.push(tab.path);
 };
 const dynamicUrl = ref('');
-const imageVersion = ref(Date.now()); // Used to force image refresh
+const imageVersion = ref(Date.now()); 
 
 const fetchUserImage = async () => {
   try {
@@ -418,23 +479,25 @@ const totalDiscount = computed(() => {
     }, 0);
 });
 
+// const finalTotal = computed(() => {
+//     return withoutDiscountTotal.value - totalDiscount.value;
+// });
 const finalTotal = computed(() => {
-    return withoutDiscountTotal.value - totalDiscount.value;
+    return withoutDiscountTotal.value - CartDiscountamount.value;
 });
-
 const hasSoldOutItems = computed(() => {
   return cartDatas.value.some(item => item.variant.quantity === 0);
 });
 const proceedToCheckout = () => {
-    if(hasSoldOutItems)
-    {
-        msgValue.value = 'sold_out';
-        setTimeout(() => {
-            msgValue.value = '';
-        }, 3000); 
-        // toast.error("Remove sold-out items first");
-        return;
-    }
+    // if(hasSoldOutItems)
+    // {
+    //     msgValue.value = 'sold_out';
+    //     setTimeout(() => {
+    //         msgValue.value = '';
+    //     }, 3000); 
+    //     // toast.error("Remove sold-out items first");
+    //     return;
+    // }
     
     visible.value = false;
     router.push('/checkout'); 

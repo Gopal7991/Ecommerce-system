@@ -27,32 +27,68 @@ const errorMessage = ref(null);
 const navigationTabs = [
   { name: 'products', label: 'All Product', path: '/products-all', icon: 'pi pi-list',  color: 'green' },
 ];
+const showInput = ref(false) 
+const couponCode = ref('')
+const message = ref('')
+const CartDiscountamount = ref(0);
+const DiscountProductApplied = ref([]);
+const isApplied = ref(false);
+const applyCoupon = async () => {
+  try {
+    const token = localStorage.getItem('api_token')
 
-// const handlePayment = async () => {
-//   try {
-//     loading.value = true;
-//     const token = localStorage.getItem('api_token'); // Get your auth token
+    const response = await axios.post('/api/coupons/apply-coupon', 
+      { code: couponCode.value }, 
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-//     const { data } = await axios.post('/api/checkout', 
-//       { amount: finalTotal.value }, 
-//       { headers: { Authorization: `Bearer ${token}` } }
-//     );
+    CartDiscountamount.value = response.data.discount || 0;
+    DiscountProductApplied.value = response.data.appliedItemIds || [];
+    message.value = response.data.message || '';
 
-//     if (data.url) {
-//       // Best Practice: Redirect directly to the Stripe-hosted URL
-//       window.location.href = data.url;
-//     } else if (data.id && stripe.value) {
-//       // Fallback: Use the Session ID with the Stripe SDK
-//       const { error } = await stripe.value.redirectToCheckout({ sessionId: data.id });
-//       if (error) throw error;
-//     }
-//   } catch (err) {
-//     console.error("Checkout Error:", err);
-//     toast.error(err.response?.data?.message || "Checkout failed");
-//   } finally {
-//     loading.value = false;
-//   }
-// };
+    isApplied.value = true;
+
+  } catch (error) {
+    message.value = 'Invalid or expired coupon.';
+    isApplied.value = false;
+  }
+};
+const discountSet = computed(() => {
+  return new Set((DiscountProductApplied.value || []).map(Number));
+});
+const itemDiscountMap = computed(() => {
+  const appliedIds = new Set((DiscountProductApplied.value || []).map(Number));
+
+  const appliedItems = cartDatas.value.filter(item =>
+    appliedIds.has(Number(item.id)) 
+
+  );
+
+  const total = appliedItems.reduce((sum, item) => {
+    return sum + (item.product.price * item.quantity);
+  }, 0);
+
+  const map = {};
+
+  appliedItems.forEach(item => {
+    const itemTotal = item.product.price * item.quantity;
+
+    const ratioDiscount = total > 0
+      ? (itemTotal / total) * CartDiscountamount.value
+      : 0;
+
+    map[item.id] = Math.round(ratioDiscount);
+  });
+
+  return map;
+});
+const removeCoupon = () => {
+    isApplied.value = false;
+    couponCode.value = '';
+    CartDiscountamount.value = 0;
+    DiscountProductApplied.value = [];
+    message.value = 'Coupon removed.';
+};
 const handlePayment = async () => {
   try {
     if (!validateForm()) return;
@@ -63,7 +99,10 @@ const handlePayment = async () => {
     const payload = {
       amount: finalTotal.value,
       shipping: form.value,
-      items: formattedCart.value
+      items: formattedCart.value,
+      couponcode:couponCode.value,
+      discount:CartDiscountamount.value,
+      discountproduct:DiscountProductApplied.value
     };
 
     const { data } = await axios.post('/api/checkout', payload, {
@@ -282,7 +321,7 @@ const totalDiscount = computed(() => {
 });
 
 const finalTotal = computed(() => {
-    return withoutDiscountTotal.value - totalDiscount.value;
+    return withoutDiscountTotal.value - CartDiscountamount.value;
 });
 
 const proceedToCheckout = () => {
@@ -377,9 +416,69 @@ onUnmounted(() => {
                                         <p class="text-slate-500 text-xs">Qty:{{ data.quantity }}</p>
                                     </div>
                                 </div>
-                                <span class="font-medium text-slate-700">₹{{ (data.product.price - (data.product.discount_price || 0)) * data.quantity }}</span>
+                                <div class="flex items-center gap-3 mb-4">
+                                    <span class="line-through text-gray-400 text-lg">₹{{data.product.price}}</span>
+                                    <span class="text-2xl font-bold">₹{{ (data.product.price - (itemDiscountMap[data.id]?.toFixed(2) || 0)) * data.quantity }} </span> 
+                                </div>
+                            </div>
+                            <span v-if="discountSet.has(Number(data.id))" class="text-green-600 text-sm font-bold ml-45"> Discount: ₹{{ itemDiscountMap[data.id]?.toFixed(2) }}</span>
+                        </div>
+                    </div>
+                    <div class="coupon-container">
+                        <div class="coupon-container">
+                            <label 
+                                @click="showInput = true" 
+                                class="block text-sm font-medium text-blue-600 mb-1 cursor-pointer hover:underline"
+                            > Have a coupon? </label>
+                        <!--    <div v-if="showInput" class="flex gap-2 mt-2">
+                                <input 
+                                    v-model="couponCode" 
+                                    placeholder="Enter Coupon" 
+                                    class="border rounded px-2 py-1"
+                                />
+                                <button 
+                                  v-if="!isApplied"
+                                  @click="applyCoupon" 
+                                  class="bg-black text-white px-4 py-1 rounded"
+                                >
+                                  Apply
+                                </button>
+                                <div v-else class="text-green-600 font-bold">
+                                  ✓ Coupon Applied
+                                </div>
+                            </div>  -->
+                            <div v-if="!isApplied" class="flex gap-2 mt-2">
+                                <input 
+                                    v-model="couponCode" 
+                                    placeholder="Enter Coupon" 
+                                    class="border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-black"
+                                />
+                                <button 
+                                    @click="applyCoupon" 
+                                    class="bg-black text-white px-4 py-1 rounded hover:bg-gray-800 transition"
+                                >
+                                    Apply
+                                </button>
+                            </div>
+
+                            <div v-else class="mt-2 p-2 bg-green-50 border border-green-200 rounded flex justify-between items-center">
+                                <div class="text-green-700 font-medium">
+                                    <span class="font-bold">✓ {{ couponCode }}</span> Applied
+                                    <p class="text-sm text-green-600">Saved: ₹{{ CartDiscountamount }}</p>
+                                </div>
+                                
+                                <!-- Optional: Add a button to remove/change the coupon -->
+                                <button @click="removeCoupon" class="text-xs text-red-500 underline">
+                                    Remove
+                                </button>
                             </div>
                         </div>
+
+                        
+                        <p class="text-red-500">{{ message }}</p>
+                        <!-- <div>
+                          Original: ₹{{ originalPrice }} | Final: ₹{{ finalPrice }}
+                        </div> -->
                     </div>
                     <div class="space-y-3 text-sm border-b border-slate-100 pb-6">
                         <div class="flex justify-between">
@@ -393,6 +492,10 @@ onUnmounted(() => {
                         <div class="flex justify-between">
                             <span class="text-slate-500">Estimated Tax</span>
                             <span class="font-medium text-slate-700">₹00.00</span>
+                        </div>
+                        <div  v-if="CartDiscountamount > 0" class="flex justify-between text-green-600">
+                            <span>Total Discount</span>
+                        <span>- ₹{{ CartDiscountamount }}</span>
                         </div>
                     </div>
 

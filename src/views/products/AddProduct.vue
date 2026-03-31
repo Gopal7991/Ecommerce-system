@@ -118,6 +118,7 @@ function useCategories() {
         }
       })
       categories.value = response.data
+      console.log( 'category name' ,response.data);
     } catch (error) {
       console.error('Error fetching categories:', error)
     } finally {
@@ -262,7 +263,7 @@ onMounted(() => {
                 <Field name="category_id" as="select" v-model="formData.category_id" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border">
                     <option :value="null" disabled>Select a category</option>
                     <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                    {{ cat.name }}
+                    {{ cat.full_name }}
                     </option>
                 </Field>
                 <ErrorMessage name="category_id" class="text-red-500 text-sm mt-1 block" />

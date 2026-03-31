@@ -108,6 +108,7 @@
                     
                         <div class="p-4 flex flex-col flex-1 justify-between">
                             <span class="text-xs font-medium text-gray-500 mb-2">{{ product.category.name }}</span>
+                            <span class="text-xs font-medium text-gray-500 mb-2"> brand :{{ product.brand.name }}</span>
                             <h2 class="text-lg font-semibold mb-2">{{ product.name }}</h2>
                             <p class="text-indigo-600 font-bold mb-2">₹{{ product.price }}</p>
 
@@ -209,7 +210,7 @@ function useBrands() {
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
       })
       brands.value = response.data
-      console.log(brands.value)
+      // console.log(brands.value)
     } catch (error) {
       console.error('Error fetching brands:', error)
     }
