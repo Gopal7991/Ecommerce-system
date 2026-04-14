@@ -38,7 +38,7 @@
           <Button asChild>
             <router-link 
               to="/add-product" 
-              class="px-6 py-2.5 !bg-indigo-300 hover:!bg-indigo-400 !rounded-md !transition-all !shadow-md !border-none text-white no-underline inline-flex items-center"
+              class="px-6 py-2.5 !bg-indigo-400 !rounded-md !transition-all !shadow-md !border-none text-white no-underline inline-flex items-center"
             >
               + Add Product
             </router-link>
@@ -83,7 +83,7 @@
               </tr>
               <tr
                 v-else
-                v-for="product in paginatedProducts"
+                v-for="product in products"
                 :key="product.id"
                 class="border-b hover:bg-gray-50"
               >
@@ -125,7 +125,7 @@
               <Paginator 
                 v-model:first="first" 
                 v-model:rows="rows" 
-                :totalRecords="products.length" 
+                :totalRecords="totalRecords" 
                 :rowsPerPageOptions="[5, 10, 20, 50]"
                 template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                 currentPageReportTemplate="Showing {first} to {last} of {totalRecords}"
@@ -273,6 +273,7 @@ const imageEditEditor = {
 };
 const pond = ref(null);
 const products = ref([]);
+const totalRecords = ref([]);
 const loading = ref(true);
 const error = ref(null);
 const successMessage = ref('')
@@ -286,6 +287,7 @@ const imageDialogVisible = ref(false);
 const activeProduct = ref(null);
 const tempFiles = ref([]);
 const sortOption = ref('');
+const currentPage = computed(() => Math.floor(first.value / rows.value) + 1);
 const filteredProducts = computed(() => {
   if (!search.value) return products.value;
 
@@ -304,6 +306,7 @@ const paginatedProducts = computed(() => {
 const onPage = (event) => {
     first.value = event.first;
     rows.value = event.rows;
+    fetchProducts();
 };
 const fetchProducts = async () => {
   try {
@@ -325,11 +328,14 @@ const fetchProducts = async () => {
       params: {
         sort_by,
         sort_order,
+        per_page: rows.value,
+        page: currentPage.value,
         search: search.value
       }
     });
 
     products.value = response.data.data;
+    totalRecords.value = response.data.total; 
   } catch (err) {
     toast.error('Failed to fetch products: ' + err.message);
   } finally {
@@ -354,8 +360,7 @@ const openImagePopup = async (product) => {
         Accept: "application/json"
       }
     });
-
-    const images = response.data.images;
+    const images = response.data.data;
 
     tempFiles.value = images.map(img => ({
     source: img.url,

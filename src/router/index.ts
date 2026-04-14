@@ -1,5 +1,6 @@
 // src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router';
+import { useCartStore } from '@/stores/cartStore';
 import HomeView from '../views/HomeView.vue';
 import AboutView from '../views/AboutView.vue';
 import Main from '../components/Main.vue';
@@ -23,6 +24,13 @@ import OrderHistory from '@/views/productdata/OrderHistory.vue';
 import CouponView from '@/views/coupons/CouponView.vue';
 import AddCoupon from '@/views/coupons/AddCoupon.vue';
 import EditCoupon from '@/views/coupons/EditCoupon.vue';
+import PaymentSuccess from '@/views/productdata/PaymentSuccess.vue';
+import OrdersPage from '@/views/productdata/OrdersPage.vue';
+import OrderView from '@/views/orders/OrderView.vue';
+
+import PostList from "@/views/post/PostList.vue";
+import PostCreate from "@/views/post/PostCreate.vue";
+import PostEdit from "@/views/post/PostEdit.vue";
 
 const routes = [
   { path: '/', name: 'main', component: Main,meta: { guestOnly: true } },
@@ -112,6 +120,29 @@ const routes = [
         component: EditCoupon,
         meta: { requiresAuth: true }
       },
+      {
+        path: 'orders',
+        name: 'OrderView',
+        component: OrderView,
+        meta: { requiresAuth: true }
+        
+      },
+      {
+        path: "/posts",
+        name: "PostList",
+        component: PostList,
+      },
+      {
+        path: "/posts/create",
+        name: "PostCreate",
+        component: PostCreate,
+      },
+      {
+        path: "/posts/:id/edit",
+        name: "PostEdit",
+        component: PostEdit,
+        props: true,
+      },
     ],
   },
   {
@@ -144,6 +175,18 @@ const routes = [
         name: 'OrderHistory',
         component: OrderHistory,
         meta: { requiresAuth: true}
+      },
+      {
+        path: '/my-orders',
+        name: 'OrdersPage',
+        component:OrdersPage,
+        meta: { requiresAuth: true}
+      },
+      {
+        path: '/payment-success',
+        name: 'PaymentSuccess',
+        component: PaymentSuccess,
+        meta: { requiresAuth: true}
       }
     ],
   }
@@ -154,6 +197,27 @@ const router = createRouter({
   routes,
   linkExactActiveClass: 'Active'
 });
+
+router.beforeEach((to, from, next) => {
+  const cartStore = useCartStore();
+
+  console.log('Guard check:', cartStore.isCheckoutAllowed);
+
+  if (to.path === '/checkout') {
+    if (cartStore.isCheckoutAllowed) {
+      next();
+    } else {
+      cartStore.toggleCart(true);
+      next('/products-all');
+    }
+  } else {
+    if (from.path === '/checkout') {
+      cartStore.disallowCheckout();
+    }
+    next();
+  }
+});
+
 
 // router.beforeEach((to, from, next) => {
 //   const isAuthenticated = localStorage.getItem('api_token')
@@ -168,15 +232,12 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const isAuthenticated = localStorage.getItem('api_token')
 
-  // Case 1: Trying to access Login page ('/') while already logged in
   if (to.path === '/' && isAuthenticated) {
     next('/dashboard') // Redirect to the actual dashboard path
   } 
-  // Case 2: Trying to access Protected page without a token
   else if (to.meta.requiresAuth && !isAuthenticated) {
     next('/')
   } 
-  // Case 3: Proceed as normal
   else {
     next()
   }

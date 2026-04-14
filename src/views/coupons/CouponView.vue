@@ -27,7 +27,7 @@
           <Button asChild>
             <router-link 
               to="/add-coupon" 
-              class="px-6 py-2.5 !bg-indigo-300 hover:!bg-indigo-400 !rounded-md !transition-all !shadow-md !border-none text-white no-underline inline-flex items-center"
+              class="px-6 py-2.5 !bg-indigo-400 !rounded-md !transition-all !shadow-md !border-none text-white no-underline inline-flex items-center"
             >
               + Add Coupon
             </router-link>
@@ -71,7 +71,7 @@
               <!-- v-for="category in paginatedCategories" -->
               <tr
                 v-else
-                v-for="coupon in paginatedCoupons"
+                v-for="coupon in coupons"
                 :key="coupon.id"
                 class="border-b hover:bg-gray-50"
               >
@@ -107,7 +107,7 @@
               <Paginator 
                 v-model:first="first" 
                 v-model:rows="rows" 
-                :totalRecords="coupons.length" 
+                :totalRecords="totalRecords" 
                 :rowsPerPageOptions="[5, 10, 20, 50]"
                 template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                 currentPageReportTemplate="Showing {first} to {last} of {totalRecords}"
@@ -156,9 +156,11 @@ const successMessage = ref('')
 const visible = ref(false);
 const selectedId = ref(null);
 const selectedName = ref('');
-
+const totalRecords = ref([]);
 const first = ref(0); 
 const rows = ref(5); 
+const search = ref('');
+const currentPage = computed(() => Math.floor(first.value / rows.value) + 1);
 
 const fetchCoupons = async () => {
   try {
@@ -168,9 +170,15 @@ const fetchCoupons = async () => {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: 'application/json'
+        },
+        params: {
+          per_page: rows.value,
+          page: currentPage.value,
+          search: search.value
         }
       })
     coupons.value = response.data.data; 
+    totalRecords.value = response.data.total; 
     console.log('response data',response.data)
   } catch (err) {
     error.value = 'Failed to fetch coupons: ' + err.message;
@@ -184,6 +192,7 @@ const paginatedCoupons = computed(() => {
 const onPage = (event) => {
     first.value = event.first;
     rows.value = event.rows;
+    fetchCoupons();
 };
 const openDeleteDialog = (id, couponname) => {
   selectedId.value = id;
@@ -216,6 +225,9 @@ const handleDelete = async (couponId) => {
         }
     } 
 }; 
+watch([search], () => {
+  fetchCoupons();
+});
 onMounted(() => {
   fetchCoupons();
   const successMsg = sessionStorage.getItem('toastMsg');
@@ -228,7 +240,3 @@ onMounted(() => {
   
 });
 </script>
-
-
-  // FIXED100
-  // BRDNK10

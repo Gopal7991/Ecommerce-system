@@ -111,13 +111,13 @@ function useCategories() {
     buttonLabel.value = 'Saving...'
     try {
       const token = localStorage.getItem('api_token')
-      const response = await axios.get('/api/categories/categories-with-child', {
+      const response = await axios.get('/api/categories/category-with-child', {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: 'application/json'
         }
       })
-      categories.value = response.data
+      categories.value = response.data.original || []
       console.log( 'category name' ,response.data);
     } catch (error) {
       console.error('Error fetching categories:', error)
@@ -138,7 +138,8 @@ function useBrands() {
       const response = await axios.get('/api/products/brands', {
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
       })
-      brands.value = response.data
+      // console.log('brand data', response.data)
+      brands.value = response.data.data
       console.log(brands.value)
     } catch (error) {
       console.error('Error fetching brands:', error)
@@ -162,13 +163,15 @@ const formData = ref({
 })
 
 const submitProduct = async (values, { setErrors }) => {
+
   try {
     loading.value = true;
     const token = localStorage.getItem('api_token')
 
     const payload = {
         ...formData.value,
-        variants: productVariants.value,  
+        variants: productVariants.value, 
+        has_variants: hasVariants.value, 
     };
 console.log(payload)
     const response = await axios.post(
@@ -216,29 +219,29 @@ onMounted(() => {
       <Form :validation-schema="Schema" @submit="submitProduct" v-slot="{ errors }">
         
         <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700"> Product Name </label>
+          <label class="block text-sm font-medium text-gray-700"> Product Name <span class="text-red-500">*</span> </label>
           <Field name="name" type="text" v-model="formData.name" 
-                 class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border focus:ring-indigo-500 focus:border-indigo-500" 
+                 class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none" 
                  placeholder="e.g. TV" />
           <ErrorMessage name="name" class="text-red-500 text-sm mt-1 block" />
         </div>
 
         <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700"> Description </label>
+          <label class="block text-sm font-medium text-gray-700"> Description <span class="text-red-500">*</span> </label>
             <Field 
                 name="description" 
                 as="textarea" 
                 v-model="formData.description"
                 rows="3"
-                class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border focus:ring-indigo-500 focus:border-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none"
                 placeholder="Product description"
             />
             <ErrorMessage name="description" class="text-red-500 text-sm mt-1 block" />
         </div>
 
         <!-- <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700">Category</label>
-            <Field name="category_id" as="select" v-model="formData.category_id" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border focus:ring-indigo-500 focus:border-indigo-500">
+            <label class="block text-sm font-medium text-gray-700">Category <span class="text-red-500">*</span></label>
+            <Field name="category_id" as="select" v-model="formData.category_id" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none">
                 <option :value="null" disabled>Select a category</option>
                 <option v-for="cat in categories" :key="cat.id" :value="cat.id">
                 {{ cat.name }}
@@ -247,7 +250,7 @@ onMounted(() => {
             <ErrorMessage name="category_id" class="text-red-500 text-sm mt-1 block" />
         </div>
         <div>
-            <label class="block text-sm font-medium text-gray-700">Brand</label>
+            <label class="block text-sm font-medium text-gray-700">Brand <span class="text-red-500">*</span></label>
             <Field name="brand_id" as="select" v-model="formData.brand_id" 
                 class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border focus:ring-indigo-500 focus:border-indigo-500">
                 <option :value="null" disabled>Select a brand</option>
@@ -259,8 +262,8 @@ onMounted(() => {
         </div> -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700">Category</label>
-                <Field name="category_id" as="select" v-model="formData.category_id" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border">
+                <label class="block text-sm font-medium text-gray-700">Category <span class="text-red-500">*</span></label>
+                <Field name="category_id" as="select" v-model="formData.category_id" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none">
                     <option :value="null" disabled>Select a category</option>
                     <option v-for="cat in categories" :key="cat.id" :value="cat.id">
                     {{ cat.full_name }}
@@ -270,9 +273,9 @@ onMounted(() => {
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700">Brand</label>
+                <label class="block text-sm font-medium text-gray-700">Brand <span class="text-red-500">*</span></label>
                  <Field name="brand_id" as="select" v-model="formData.brand_id" 
-                    class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border" placeholder="Select a brand">
+                    class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none" placeholder="Select a brand">
                     <option :value="null" disabled>Select a brand</option>
                     <option v-for="brand in brands" :key="brand.id" :value="brand.id">
                         {{ brand.name }}
@@ -283,21 +286,21 @@ onMounted(() => {
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700">Price</label>
-                <Field name="price" type="number" v-model="formData.price" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border" placeholder="0.00" />
+                <label class="block text-sm font-medium text-gray-700">Price <span class="text-red-500">*</span></label>
+                <Field name="price" type="number" v-model="formData.price" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none" placeholder="0.00" />
                 <ErrorMessage name="price" class="text-red-500 text-sm mt-1 block" />
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">Discount</label>
-                <Field name="discount_price" type="number" v-model="formData.discount_price" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border" placeholder="0" />
+                <Field name="discount_price" type="number" v-model="formData.discount_price" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none" placeholder="0" />
                 <ErrorMessage name="discount_price" class="text-red-500 text-sm mt-1 block" />
             </div>
         </div>
 
         <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700">SKU</label>
-            <Field name="sku" type="text" v-model="formData.sku" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border" placeholder="e.g. ELEC-001" />
+          <label class="block text-sm font-medium text-gray-700">SKU <span class="text-red-500">*</span></label>
+            <Field name="sku" type="text" v-model="formData.sku" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none" placeholder="e.g. ELEC-001" />
             <ErrorMessage name="sku" class="text-red-500 text-sm mt-1 block" />
         </div>
         <div class="mb-4">
@@ -344,7 +347,7 @@ onMounted(() => {
                 name="quantity" 
                 type="number" 
                 v-model="formData.quantity" 
-                class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border" 
+                class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none" 
                 placeholder="0" 
             />
             <ErrorMessage name="quantity" class="text-red-500 text-sm mt-1 block" />
@@ -487,14 +490,14 @@ onMounted(() => {
             <button 
                 type="button" 
                 @click="goBack" 
-                class="px-4 py-2 mr-3 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition">
+                class="px-4 py-2 mr-3 bg-gray-400 text-gray-700 text-white rounded">
                 Back
             </button>
             <Button 
               type="submit"
               :loading="loading" 
               @click="saveForm"
-              class="px-6 py-2.5 !bg-indigo-300 hover:!bg-indigo-400 !text-white !rounded-md !transition-all !shadow-md !border-none"
+              class="px-6 py-2.5 !bg-indigo-400 !text-white !rounded-md !transition-all !shadow-md !border-none"
               :label="loading ? 'Saving...' : 'Save Product'" 
             />
         </div>
@@ -502,3 +505,13 @@ onMounted(() => {
     </div>
   </div>
 </template>
+<style setup>
+::placeholder {
+  color: gray;
+  opacity: 1;
+}
+
+::-ms-input-placeholder { 
+  color: gray;
+}
+</style>

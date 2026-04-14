@@ -33,26 +33,47 @@ const message = ref('')
 const CartDiscountamount = ref(0);
 const DiscountProductApplied = ref([]);
 const isApplied = ref(false);
+const errors = ref({});
+
 const applyCoupon = async () => {
   try {
-    const token = localStorage.getItem('api_token')
+    // reset previous messages
+    message.value = '';
+    errorMessage.value = '';
 
-    const response = await axios.post('/api/coupons/apply-coupon', 
-      { code: couponCode.value }, 
+    if (!couponCode.value) {
+      errorMessage.value = "Please enter a coupon code.";
+      return;
+    }
+
+    const token = localStorage.getItem('api_token');
+    const response = await axios.post(
+      '/api/coupons/apply-coupon',
+      { code: couponCode.value },
       { headers: { Authorization: `Bearer ${token}` } }
     );
+    console.log('saddddd', response.data.data);
+    if (response.data.error_message) {
+      // API returned an error
+      errorMessage.value = response.data.error_message;
+      isApplied.value = false;
+      CartDiscountamount.value = 0;
+      DiscountProductApplied.value = [];
+    } else {
+      // Success
+      CartDiscountamount.value = response.data.data.discount || 0;
+      DiscountProductApplied.value = response.data.data.appliedItemIds || [];
+      message.value = response.data.message || 'Coupon applied successfully.';
+      isApplied.value = true;
+    }
 
-    CartDiscountamount.value = response.data.discount || 0;
-    DiscountProductApplied.value = response.data.appliedItemIds || [];
-    message.value = response.data.message || '';
-
-    isApplied.value = true;
-
-  } catch (error) {
-    message.value = 'Invalid or expired coupon.';
+  } catch (err) {
+    console.error(err);
+    errorMessage.value = err.response?.data?.message || 'Invalid or expired coupon.';
     isApplied.value = false;
   }
 };
+
 const discountSet = computed(() => {
   return new Set((DiscountProductApplied.value || []).map(Number));
 });
@@ -89,10 +110,11 @@ const removeCoupon = () => {
     DiscountProductApplied.value = [];
     message.value = 'Coupon removed.';
 };
+
 const handlePayment = async () => {
   try {
-    if (!validateForm()) return;
-
+    // if (!validateForm()) return;
+     errors.value = {};
     loading.value = true;
     const token = localStorage.getItem('api_token');
 
@@ -119,8 +141,11 @@ const handlePayment = async () => {
     }
 
   } catch (err) {
-    console.error("Checkout Error:", err);
-    toast.error(err.response?.data?.message || "Checkout failed");
+    if (err.response?.status === 422) {
+        errors.value = err.response.data.errors;
+    } else {
+        toast.error(err.response?.data?.message || "Checkout failed");
+    }
   } finally {
     loading.value = false;
   }
@@ -283,28 +308,7 @@ const logout = async () => {
     router.push('/');
   }
 };
-const removeProductItem = async (id) => {
-    try {
-        const token = localStorage.getItem('api_token');
-        const response = await axios.delete(`/api/cart-items/delete/${id}`, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-                Accept: 'application/json'
-            }
-        });
 
-        if (response.data.status) {
-            toast.success('Item removed from cart!');
-
-            cartDatas.value = cartDatas.value.filter(item => item.id !== id);
-
-            if (cartCount.value > 0) {
-                cartCount.value--;
-            }
-        }
-    } catch (error) {
-    }
-};
 
 
 const withoutDiscountTotal = computed(() => {
@@ -333,9 +337,12 @@ onMounted(() => {
   fetchUserImage();
   fetchCategories();
   fetchCartCount();
-  
+  emitter.on('cartUpdated', () => {
+        fetchCartCount(); 
+    });
   window.addEventListener('click', closeDropdown);
   emitter.on('cart-updated', fetchCartCount)
+
 //   emitter.on('image-updated', (newUrl) => {
 //     dynamicUrl.value = newUrl;
 //     imageVersion.value = Date.now();
@@ -354,38 +361,59 @@ onUnmounted(() => {
                 <h2 class="text-xl font-semibold mb-6 text-slate-800">Shipping Details</h2>
                 <form class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Full Name <span class="text-red-500">*</span></label>
                         <input type="text" v-model="form.name" placeholder="Enter Full Name" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <span v-if="errors['shipping.name']" class="text-red-500 text-xs mt-1">
+                            {{ errors['shipping.name'][0] }}
+                        </span>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Street Address</label>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Street Address <span class="text-red-500">*</span></label>
                         <input type="text" v-model="form.address" placeholder="Enter Address" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <span v-if="errors['shipping.address']" class="text-red-500 text-xs mt-1">
+                            {{ errors['shipping.address'][0] }}
+                        </span>
                     </div>
 
                     <div class="grid grid-cols-3 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">City</label>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">City <span class="text-red-500">*</span></label>
                             <input type="text" v-model="form.city" placeholder="Enter City" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <span v-if="errors['shipping.city']" class="text-red-500 text-xs mt-1">
+                                {{ errors['shipping.city'][0] }}
+                            </span>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">State</label>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">State <span class="text-red-500">*</span></label>
                             <input type="text" v-model="form.state"  placeholder="Enter State" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <span v-if="errors['shipping.state']" class="text-red-500 text-xs mt-1">
+                                {{ errors['shipping.state'][0] }}
+                            </span>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">ZIP Code</label>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">ZIP Code <span class="text-red-500">*</span></label>
                             <input type="text" v-model="form.zip" placeholder="Enter Zip Code" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <span v-if="errors['shipping.zip']" class="text-red-500 text-xs mt-1">
+                                {{ errors['shipping.zip'][0] }}
+                            </span>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Email <span class="text-red-500">*</span></label>
                             <input type="email" v-model="form.email" placeholder="Enter Email" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <span v-if="errors['shipping.email']" class="text-red-500 text-xs mt-1">
+                                {{ errors['shipping.email'][0] }}
+                            </span>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Phone</label>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Phone <span class="text-red-500">*</span></label>
                             <input type="tel" v-model="form.phone" placeholder="Enter Phone Number" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <span v-if="errors['shipping.phone']" class="text-red-500 text-xs mt-1">
+                                {{ errors['shipping.phone'][0] }}
+                            </span>
                         </div>
                     </div>
 
@@ -417,7 +445,9 @@ onUnmounted(() => {
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-3 mb-4">
-                                    <span class="line-through text-gray-400 text-lg">₹{{data.product.price}}</span>
+                                    <span :class="{ 'line-through text-gray-400 text-lg': discountSet.has(Number(data.id)) }">
+                                    ₹{{data.product.price}}
+                                </span>
                                     <span class="text-2xl font-bold">₹{{ (data.product.price - (itemDiscountMap[data.id]?.toFixed(2) || 0)) * data.quantity }} </span> 
                                 </div>
                             </div>
@@ -430,23 +460,7 @@ onUnmounted(() => {
                                 @click="showInput = true" 
                                 class="block text-sm font-medium text-blue-600 mb-1 cursor-pointer hover:underline"
                             > Have a coupon? </label>
-                        <!--    <div v-if="showInput" class="flex gap-2 mt-2">
-                                <input 
-                                    v-model="couponCode" 
-                                    placeholder="Enter Coupon" 
-                                    class="border rounded px-2 py-1"
-                                />
-                                <button 
-                                  v-if="!isApplied"
-                                  @click="applyCoupon" 
-                                  class="bg-black text-white px-4 py-1 rounded"
-                                >
-                                  Apply
-                                </button>
-                                <div v-else class="text-green-600 font-bold">
-                                  ✓ Coupon Applied
-                                </div>
-                            </div>  -->
+                            <p v-if="errorMessage" class="text-red-500 text-sm mt-2 text-center">{{ errorMessage }}</p>
                             <div v-if="!isApplied" class="flex gap-2 mt-2">
                                 <input 
                                     v-model="couponCode" 
@@ -523,7 +537,7 @@ onUnmounted(() => {
                                 <span v-else>Continue to Payment</span>
                             </button>
                         </div>
-                         <p v-if="errorMessage" class="text-red-500 text-sm mt-2 text-center">{{ errorMessage }}</p>
+                       <!--  <p v-if="errorMessage" class="text-red-500 text-sm mt-2 text-center">{{ errorMessage }}</p> -->
                     </div>
                     <!-- <p class="text-xs text-slate-400 mt-4 text-center">Includes GST/ITC compliance</p> -->
                 </div>

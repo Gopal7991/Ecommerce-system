@@ -104,10 +104,11 @@ const loading = ref(false)
 const fetchCategories = async () => {
     try {
         const token = localStorage.getItem('api_token')
-        const response = await axios.get('/api/categories/categories-with-child', {
+        const response = await axios.get('/api/categories/category-with-child', {
             headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
         })
-        categories.value = response.data
+
+        categories.value = response.data.original || []
     } catch (error) { console.error(error) }
 }
 
@@ -117,7 +118,7 @@ const fetchBrands = async () => {
       const response = await axios.get('/api/products/brands', {
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
       })
-      brands.value = response.data
+      brands.value = response.data.data
       console.log(brands.value)
     } catch (error) {
       console.error('Error fetching brands:', error)
@@ -135,8 +136,7 @@ const fetchProductData = async () => {
     const response = await axios.get(`/api/products/edit/${productId}`, {
       headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
     })
-    
-    const product = response.data;
+    const product = response.data.data;
     formData.value = { ...product };
     
     if (product.variants && product.variants.length > 0) {
@@ -217,19 +217,19 @@ onMounted(async () => {
     <div v-if="!loading" class="bg-white rounded-xl shadow p-6">
       <Form :validation-schema="Schema" :initial-values="formData" @submit="submitProduct">
         <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700">Product Name</label>
-          <Field name="name" v-model="formData.name" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border focus:ring-indigo-500" />
+          <label class="block text-sm font-medium text-gray-700">Product Name <span class="text-red-500">*</span></label>
+          <Field name="name" v-model="formData.name" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none" />
           <ErrorMessage name="name" class="text-red-500 text-sm" />
         </div>
 
          <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700">Product Description</label>
+          <label class="block text-sm font-medium text-gray-700">Product Description <span class="text-red-500">*</span></label>
           <Field 
                 name="description" 
                 as="textarea" 
                 v-model="formData.description"
                 rows="3"
-                class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border focus:ring-indigo-500 focus:border-indigo-500"
+                class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none"
                 placeholder="Product description"
             />
             <ErrorMessage name="description" class="text-red-500 text-sm mt-1 block" />
@@ -237,21 +237,21 @@ onMounted(async () => {
         </div>
 
         <!-- <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700">Category</label>
-            <Field name="category_id" as="select" v-model="formData.category_id" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border">
+            <label class="block text-sm font-medium text-gray-700">Category <span class="text-red-500">*</span></label>
+            <Field name="category_id" as="select" v-model="formData.category_id" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none">
                 <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
             </Field>
         </div> -->
         <div class="grid grid-cols-2 gap-4 mb-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700">Category</label>
-                <Field name="category_id" as="select" v-model="formData.category_id" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border">
+                <label class="block text-sm font-medium text-gray-700">Category <span class="text-red-500">*</span></label>
+                <Field name="category_id" as="select" v-model="formData.category_id" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none">
                     <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
                 </Field>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700">Brand</label>
-                <Field name="brand_id" as="select" v-model="formData.brand_id" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border">
+                <label class="block text-sm font-medium text-gray-700">Brand <span class="text-red-500">*</span></label>
+                <Field name="brand_id" as="select" v-model="formData.brand_id" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none">
                     <option v-for="brand in brands" :key="brand.id" :value="brand.id">{{ brand.name }}</option>
                 </Field>
                 <ErrorMessage name="brand_id" class="text-red-500 text-sm mt-1 block" />
@@ -260,18 +260,18 @@ onMounted(async () => {
 
         <div class="grid grid-cols-2 gap-4 mb-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700">Price</label>
-                <Field name="price" type="number" v-model="formData.price" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border" />
+                <label class="block text-sm font-medium text-gray-700">Price <span class="text-red-500">*</span></label>
+                <Field name="price" type="number" v-model="formData.price" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none" />
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Discount</label>
-                <Field name="discount_price" v-model="formData.discount_price" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border" />
+                <Field name="discount_price" v-model="formData.discount_price" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none" />
             </div>
         </div>
 
         <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700">SKU</label>
-            <Field name="sku" v-model="formData.sku" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border" />
+            <label class="block text-sm font-medium text-gray-700">SKU <span class="text-red-500">*</span></label>
+            <Field name="sku" v-model="formData.sku" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none" />
         </div>
         <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700 font-semibold mb-2">Gender</label>
@@ -314,7 +314,7 @@ onMounted(async () => {
         </div>
         <div v-if="!hasVariants" class="mb-4">
             <label class="block text-sm font-medium text-gray-700">Quantity</label>
-            <Field name="quantity" type="number" v-model="formData.quantity" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border" />
+            <Field name="quantity" type="number" v-model="formData.quantity" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none" />
         </div>
 
         <div class="flex items-center gap-2 mb-6 p-4 bg-gray-50 rounded-lg border">
@@ -388,10 +388,10 @@ onMounted(async () => {
             <button 
                 type="button" 
                 @click="goBack" 
-                class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition">
+                class="px-4 py-2 bg-gray-400 text-gray-700 text-white rounded">
                 Back
             </button>
-            <button type="submit" :disabled="loading" class="px-6 ml-3 py-2.5 !bg-indigo-300 hover:!bg-indigo-400 !text-white !rounded-md !transition-all !shadow-md !border-none">
+            <button type="submit" :disabled="loading" class="px-6 ml-3 py-2.5 !bg-indigo-400 !text-white !rounded-md !transition-all !shadow-md !border-none">
                 {{ loading ? 'Saving...' : 'Update Product' }}
             </button>
         </div>

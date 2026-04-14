@@ -60,25 +60,25 @@ const handleChangePassword = async (values, { setErrors, resetForm }) => {
       <Form @submit="handleChangePassword" :validation-schema="ChangePasswordSchema" v-slot="{ errors }">
         
         <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700"> Current Password </label>
+          <label class="block text-sm font-medium text-gray-700"> Current Password <span class="text-red-500">*</span></label>
           <Field name="current_password" type="password" 
-                 class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border focus:ring-2 focus:ring-indigo-400 focus:outline-none" 
+                 class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none" 
                  placeholder="Current password" />
           <ErrorMessage name="current_password" class="text-red-500 text-sm mt-1 block" />
         </div>
 
         <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700"> New Password </label>
+          <label class="block text-sm font-medium text-gray-700"> New Password <span class="text-red-500">*</span></label>
           <Field name="new_password" type="password" 
-                 class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border focus:ring-2 focus:ring-indigo-400 focus:outline-none" 
+                 class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none" 
                  placeholder="Enter new password" />
           <ErrorMessage name="new_password" class="text-red-500 text-sm mt-1 block" />
         </div>
 
         <div class="mb-6">
-          <label class="block text-sm font-medium text-gray-700"> Confirm Password </label>
+          <label class="block text-sm font-medium text-gray-700"> Confirm Password <span class="text-red-500">*</span></label>
           <Field name="password_confirmation" type="password" 
-                 class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border focus:ring-2 focus:ring-indigo-400 focus:outline-none" 
+                 class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none" 
                  placeholder="Confirm new password" />
           <ErrorMessage name="password_confirmation" class="text-red-500 text-sm mt-1 block" />
         </div>
@@ -87,7 +87,7 @@ const handleChangePassword = async (values, { setErrors, resetForm }) => {
           <Button 
             type="submit"
             :loading="loading" 
-            class="px-6 py-2.5 !bg-indigo-300 hover:!bg-indigo-400 !rounded-md !transition-all !shadow-md !border-none text-white font-medium"
+            class="px-6 py-2.5 !bg-indigo-400 !rounded-md !transition-all !shadow-md !border-none text-white font-medium"
             :label="loading ? 'Updating...' : 'Update Password'" 
           />
         </div>

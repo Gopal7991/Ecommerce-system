@@ -31,7 +31,7 @@ function useBrands() {
       const response = await axios.get('/api/products/brands', {
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
       })
-      brands.value = response.data
+      brands.value = response.data.data
       console.log(brands.value)
     } catch (error) {
       console.error('Error fetching brands:', error)
@@ -164,7 +164,7 @@ onMounted(() => {
           <Field name="name"
                  type="text"
                  v-model="formData.name"
-                 class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border"
+                 class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none"
                  placeholder="e.g. Electronics" />
 
           <ErrorMessage name="name"
@@ -173,7 +173,7 @@ onMounted(() => {
         <div class="mb-4">
           <label class="block text-sm font-medium text-gray-700"> Coupon Code <span class="text-red-500">*</span> </label>
           <Field name="code" type="text" v-model="formData.code" 
-                 class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border" 
+                 class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none" 
                  placeholder="Enter Coupon Code" />
           <ErrorMessage name="code" class="text-red-500 text-sm mt-1 block" />
         </div>
@@ -181,7 +181,7 @@ onMounted(() => {
           <div class="flex-1">
             <label class="block text-sm font-medium text-gray-700"> Coupon Type <span class="text-red-500">*</span> </label>
             <Field name="coupon_type" as="select" v-model="formData.coupon_type" 
-                   class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border">
+                   class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none">
               <option :value="null" disabled>Select a Type</option>
               <option v-for="type in couponOptions" :key="type.value" :value="type.value">
                 {{ type.label }}
@@ -192,7 +192,7 @@ onMounted(() => {
 
           <div class="flex-1">
             <label class="block text-sm font-medium text-gray-700">Brand</label>
-            <Field name="brand_id" as="select" v-model="formData.brand_id" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border">
+            <Field name="brand_id" as="select" v-model="formData.brand_id" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none">
                     <option v-for="brand in brands" :key="brand.id" :value="brand.id">{{ brand.name }}</option>
                 </Field>
                 <ErrorMessage name="brand_id" class="text-red-500 text-sm mt-1 block" />
@@ -205,7 +205,7 @@ onMounted(() => {
             type="number" 
             v-model="formData.discount_percentage"
             placeholder="Enter percentage"
-            class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border"
+            class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none"
           />
           <ErrorMessage name="discount_percentage" class="text-red-500 text-sm mt-1 block" />
         </div>
@@ -214,13 +214,13 @@ onMounted(() => {
           <div class="flex-1">
             <label class="block text-sm font-medium text-gray-700"> Coupon StartDate<span class="text-red-500">*</span> </label>
             <Field name="start_date" type="date" v-model="formData.start_date" 
-                     class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border" />
+                     class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none" />
             <ErrorMessage name="start_date" class="text-red-500 text-sm mt-1 block" />
           </div>
           <div class="flex-1">
             <label class="block text-sm font-medium text-gray-700"> Coupon EndDate <span class="text-red-500">*</span> </label>
             <Field name="end_date" type="date" v-model="formData.end_date" 
-                   class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border"  />
+                   class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none"  />
             <ErrorMessage name="end_date" class="text-red-500 text-sm mt-1 block" />
           </div>
         </div>
@@ -229,13 +229,13 @@ onMounted(() => {
           <div class="flex-1">
             <label class="block text-sm font-medium text-gray-700"> Minimum Order Amount (For Apply)  <span class="text-red-500">*</span> </label>
           <Field name="min_order_amount" type="number" v-model="formData.min_order_amount" 
-                 class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border"  />
+                 class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none"  />
           <ErrorMessage name="min_order_amount" class="text-red-500 text-sm mt-1 block" />
           </div>
           <div class="flex-1">
             <label class="block text-sm font-medium text-gray-700"> Maximum Discount Price <span class="text-red-500">*</span> </label>
             <Field name="max_discount" type="number" v-model="formData.max_discount" 
-                   class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border"  />
+                   class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none"  />
             <ErrorMessage name="max_discount" class="text-red-500 text-sm mt-1 block" />
           </div>
         </div>
@@ -243,7 +243,7 @@ onMounted(() => {
         <div class="mb-4">
           <label class="block text-sm font-medium text-gray-700"> Maximum Attempt <span class="text-red-500">*</span> </label>
           <Field name="max_attach" type="number" v-model="formData.max_attach" 
-                 class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border"  />
+                 class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none"  />
           <ErrorMessage name="max_attach" class="text-red-500 text-sm mt-1 block" />
         </div>
 
@@ -266,14 +266,14 @@ onMounted(() => {
           <button 
                 type="button" 
                 @click="goBack" 
-                class="px-4 py-2 mr-3 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition">
+                class="px-4 py-2 mr-3 bg-gray-400 text-white rounded">
                 Back
             </button>
             <Button 
               type="submit"
               :loading="loading" 
               @click="saveForm"
-              class="px-6 py-2.5 !bg-indigo-300 hover:!bg-indigo-400 !rounded-md !transition-all !shadow-md !border-none"
+              class="px-6 py-2.5 !bg-indigo-400 !rounded-md !transition-all !shadow-md !border-none"
               :label="loading ? 'Updating...' : 'Update'"
             />
         </div>

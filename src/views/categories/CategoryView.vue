@@ -25,7 +25,7 @@
         <Button asChild>
             <router-link 
             to="/add-category" 
-            class="px-6 py-2.5 !bg-indigo-300 hover:!bg-indigo-400 !rounded-md !transition-all !shadow-md !border-none text-white no-underline inline-flex items-center"
+            class="px-6 py-2.5 !bg-indigo-400  !rounded-md !transition-all !shadow-md !border-none text-white no-underline inline-flex items-center"
             >
                 + Add Category
             </router-link>
@@ -49,7 +49,7 @@
             </thead>
 
             <tbody>
-              <tr v-if="loading">
+              <tr v-if="loading1">
                 <td colspan="6" class="py-20 text-center">
                   <div class="flex flex-col items-center justify-center gap-3">
                     <!-- <ProgressSpinner style="width: 50px; height: 50px" strokeWidth="4" /> -->
@@ -62,7 +62,7 @@
                   </div>
                 </td>
               </tr>
-              <tr v-else-if="categories.length === 0">
+              <tr v-else-if="categoriesData.length === 0">
                 <td colspan="6" class="py-10 text-center text-gray-500">
                   No categories found.
                 </td>
@@ -70,7 +70,7 @@
               <!-- v-for="category in paginatedCategories" -->
               <tr
                 v-else
-                v-for="category in paginatedCategoriesData"
+                v-for="category in categoriesData"
                 :key="category.id"
                 class="border-b hover:bg-gray-50"
               >
@@ -105,7 +105,7 @@
               <Paginator 
                 v-model:first="first" 
                 v-model:rows="rows" 
-                :totalRecords="categories.length" 
+                :totalRecords="total" 
                 :rowsPerPageOptions="[5, 10, 20, 50]"
                 template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                 currentPageReportTemplate="Showing {first} to {last} of {totalRecords}"
@@ -162,7 +162,7 @@ import { useDialog } from 'primevue/usedialog';
 import { useCategoryStore } from '../../stores/categoryStore' 
 import { storeToRefs } from 'pinia'
 const categoryStore = useCategoryStore()
-const { categoriesData, loading1 } = storeToRefs(categoryStore)
+const { categoriesData, loading1,total } = storeToRefs(categoryStore)
 console.log('Category store is', categoriesData.value)
 
 // const { categoriesData } = storeToRefs(categoryStore)
@@ -180,7 +180,9 @@ const successMessage = ref('')
 
 const first = ref(0); 
 const rows = ref(5); 
-
+const search = ref('');
+const totalRecords = ref([]);
+const currentPage = computed(() => Math.floor(first.value / rows.value) + 1);
 const visible = ref(false);
 const selectedId = ref(null);
 const selectedName = ref('');
@@ -199,27 +201,34 @@ const openDeleteDialog = (id, childrenArray) => {
 const paginatedCategoriesData = computed(() => {
   return categoriesData.value.slice(first.value, first.value + rows.value);
 });
+
 const onPage = (event) => {
     first.value = event.first;
     rows.value = event.rows;
+    fetchCategories();
 };
 const fetchCategories = async () => {
-  try {
-    const token = localStorage.getItem('api_token')
+  categoryStore.fetchCategoriesData({
+        page: currentPage.value,
+        per_page: rows.value,
+        search: search.value
+    });
+  // try {
+  //   const token = localStorage.getItem('api_token')
 
-      const response = await axios.get('/api/categories', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json'
-        }
-      })
-    categories.value = response.data.data; // Assign the response data to the reactive ref
-    console.log(response.data)
-  } catch (err) {
-    error.value = 'Failed to fetch categories: ' + err.message;
-  } finally {
-    loading.value = false;
-  }
+  //     const response = await axios.get('/api/categories', {
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //         Accept: 'application/json'
+  //       }
+  //     })
+  //   categories.value = response.data.data; // Assign the response data to the reactive ref
+  //   console.log(response.data)
+  // } catch (err) {
+  //   error.value = 'Failed to fetch categories: ' + err.message;
+  // } finally {
+  //   loading.value = false;
+  // }
 };
 
 const handleDelete = async (categoryId) => {

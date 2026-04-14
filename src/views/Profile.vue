@@ -24,7 +24,7 @@
                         :maxFileSize="1000000"
                         @select="onFileSelect" 
                         chooseLabel="Browse"
-                        class="px-6 py-2 !bg-gray-400 hover:!bg-gray-500 !text-black !rounded-md !transition-all !shadow-md !border-none ml-auto"
+                        class="px-6 py-2 !bg-gray-500 text-white !rounded-md !transition-all !shadow-md !border-none ml-auto"
                     />
 
                     <span 
@@ -39,7 +39,7 @@
                     type="button"
                     :loading="loading1" 
                     @click="updateImage"
-                    class="px-6 py-2 !bg-indigo-300 hover:!bg-indigo-400 !rounded-md !transition-all !shadow-md !border-none"
+                    class="px-6 py-2 !bg-indigo-400 !rounded-md !transition-all !shadow-md !border-none"
                     :label="loading1 ? 'Updating...' : 'Update'" 
                 />
 
@@ -55,40 +55,40 @@
                 class="space-y-6"
             >
                 <div class="flex flex-col">
-                    <label class="text-sm font-semibold text-gray-600 mb-1">First Name</label>
-                    <Field name="firstname" type="text" class="block w-full px-4 py-2 mt-2 border-2 border-gray-300 rounded-md text-gray-900 bg-white" />
+                    <label class="text-sm font-semibold text-gray-600 mb-1">First Name <span class="text-red-500">*</span></label>
+                    <Field name="firstname" type="text" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none" />
                     <ErrorMessage name="firstname" class="text-red-500 text-xs mt-1" />
                 </div>
 
                 <div class="flex flex-col">
-                    <label class="text-sm font-semibold text-gray-600 mb-1">Last Name</label>
-                    <Field name="lastname" type="text" class="block w-full px-4 py-2 mt-2 border-2 border-gray-300 rounded-md text-gray-900 bg-white" />
+                    <label class="text-sm font-semibold text-gray-600 mb-1">Last Name <span class="text-red-500">*</span></label>
+                    <Field name="lastname" type="text" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none" />
                     <ErrorMessage name="lastname" class="text-red-500 text-xs mt-1" />
                 </div>
 
                 <div class="flex flex-col">
-                    <label class="text-sm font-semibold text-gray-600 mb-1">Email Address</label>
-                    <Field name="email" type="email" class="block w-full px-4 py-2 mt-2 border-2 border-gray-300 rounded-md text-gray-900 bg-white" />
+                    <label class="text-sm font-semibold text-gray-600 mb-1">Email Address <span class="text-red-500">*</span></label>
+                    <Field name="email" type="email" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none" />
                     <ErrorMessage name="email" class="text-red-500 text-xs mt-1" />
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div class="flex flex-col">
-                        <label class="text-sm font-semibold text-gray-600 mb-1">Mobile Number</label>
-                        <Field name="mobile" type="tel" class="block w-full px-4 py-2 mt-2 border-2 border-gray-300 rounded-md text-gray-900 bg-white" />
+                        <label class="text-sm font-semibold text-gray-600 mb-1">Mobile Number <span class="text-red-500">*</span></label>
+                        <Field name="mobile" type="tel" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none" />
                         <ErrorMessage name="mobile" class="text-red-500 text-xs mt-1" />
                     </div>
 
                     <div class="flex flex-col">
-                        <label class="text-sm font-semibold text-gray-600 mb-1">Birth Date</label>
-                        <Field name="birthdate" type="date" class="block w-full px-4 py-2 mt-2 border-2 border-gray-300 rounded-md text-gray-900 bg-white" />
+                        <label class="text-sm font-semibold text-gray-600 mb-1">Birth Date <span class="text-red-500">*</span></label>
+                        <Field name="birthdate" type="date" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none" />
                         <ErrorMessage name="birthdate" class="text-red-500 text-xs mt-1" />
                     </div>
                 </div>
 
                 <div class="flex flex-col">
-                    <label class="text-sm font-semibold text-gray-600 mb-1">Gender</label>
-                    <Field name="gender" as="select" class="mt-1 block w-full px-4 py-2 mt-2 border-2 border-gray-300 rounded-md">
+                    <label class="text-sm font-semibold text-gray-600 mb-1">Gender <span class="text-red-500">*</span></label>
+                    <Field name="gender" as="select" class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none">
                         <option value="" disabled>Select Gender</option>
                         <option value="male">Male</option>
                         <option value="female">Female</option>
@@ -101,7 +101,7 @@
                     type="submit"
                     :loading="loading" 
                     @click="saveForm"
-                    class="w-full h-11 !bg-indigo-300 hover:!bg-indigo-400 !rounded-md !transition-all !shadow-md !border-none"
+                    class="w-full h-11 !bg-indigo-400 !rounded-md !transition-all !shadow-md !border-none"
                     :label="loading ? 'Saving...' : 'Save'" 
                 />
             </Form>

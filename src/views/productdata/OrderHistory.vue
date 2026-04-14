@@ -14,19 +14,37 @@
   	            <div class="flex gap-4 items-center text-left">
   	              <div>
   	                <p class="font-bold text-slate-800">Order #{{ order.id }}</p>
-  	                <<!-- a 
+  	                <!-- a 
                       :href="`/api/orders/${order.id}/invoice`" 
                       target="_blank"
                       class="text-xs text-indigo-600 hover:text-indigo-800 font-medium underline flex items-center gap-1"
                     >
                       <i class="pi pi-file-pdf"></i> Receipt
                     </a> -->
-                    <button 
-                      @click="downloadReceipt(order.id)" 
-                      class="bg-blue-500 text-white px-4 py-2 rounded mt-4"
+                    <!-- <button
+                      @click="downloadInvoicePDF(order.id)"
+                      class="bg-blue-500 text-white px-4 py-2 rounded"
                     >
-                      Receipt
-                    </button>
+                      Download Invoice
+                    </button> -->
+                    <div class="flex gap-3 items-center">
+                      <button
+                        @click="downloadInvoice(order.id)"
+                        class="p-button p-component p-button-rounded p-button-text"
+                        v-tooltip="'Download Invoice'"
+                      >
+                        <i class="pi pi-download text-blue-600 text-xl"></i>
+                      </button>
+                      
+                      <!-- Send Invoice -->
+                      <button
+                        @click="sendInvoice(order.id)"
+                        class="p-button p-component p-button-rounded p-button-text"
+                        v-tooltip="'Send Invoice'"
+                      >
+                        <i class="pi pi-envelope text-green-600 text-xl"></i>
+                      </button>
+                    </div>
   	              </div>
   	            </div>
                 <div class="flex gap-4 items-center text-left">
@@ -47,7 +65,7 @@
   	          </div>
   	        </AccordionHeader>
   	        <AccordionContent>
-  	            <div v-for="(item, index) in order.order_products" :key="index" class="space-y-4 mb-4">
+  	       <div v-for="(item, index) in order.order_products" :key="index" class="space-y-4 mb-4">
             <div class="flex justify-between items-center text-sm">
               <div class="flex items-center gap-3">
                 <div class="w-16 h-16 bg-slate-100 rounded-md flex-shrink-0 overflow-hidden border border-slate-100">
@@ -96,104 +114,93 @@
           <i class="pi pi-box text-5xl text-slate-200 mb-4"></i>
           <p class="text-slate-500">No orders found yet.</p>
       </div>
-
+        <div class="pdf-offscreen">
+          <InvoiceTemplate
+            v-for="order in histories"
+            :key="'invoice-'+order.id"
+            :order="order"
+            :ref="el => invoiceRefs[order.id] = el"
+          />
+        </div>
     </div>
   </div>
 </template>
 
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted,nextTick, reactive } from 'vue';
 import axios from 'axios'; 
 import Accordion from 'primevue/accordion';
 import AccordionPanel from 'primevue/accordionpanel';
 import AccordionHeader from 'primevue/accordionheader';
 import AccordionContent from 'primevue/accordioncontent';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+// import jsPDF from 'jspdf';
+// import autoTable from 'jspdf-autotable';
+// import html2pdf from 'html2pdf.js';
+import InvoiceTemplate from '@/components/InvoiceData.vue';
+import ReceiptService from '@/services/ReceiptService.js';
+import Tooltip from 'primevue/tooltip';
+const invoiceRef = ref(null); 
 
-const orderData = ref({
-  orderId: "#PO-9921",
-  date: "2024-03-30",
-  customer: "John Doe",
-  items: [
-    { name: "Wireless Mouse", price: 25.00, qty: 2 },
-    { name: "Mechanical Keyboard", price: 75.00, qty: 1 },
-    { name: "USB-C Cable", price: 10.00, qty: 3 }
-  ]
-});
+const invoiceRefs = reactive({});
 
-// const generateReceipt = () => {
-//   const doc = new jsPDF();
+// const downloadInvoicePDF = async (orderId) => {
+//   await nextTick();
+//   await new Promise(resolve => setTimeout(resolve, 100));
 
-//   // 1. Add Header Info
-//   doc.setFontSize(20);
-//   doc.text("PURCHASE RECEIPT", 14, 22);
-  
-//   doc.setFontSize(10);
-//   doc.text(`Order ID: ${orderData.value.orderId}`, 14, 32);
-//   doc.text(`Date: ${orderData.value.date}`, 14, 38);
-//   doc.text(`Customer: ${orderData.value.customer}`, 14, 44);
+//   const invoiceComponent = invoiceRefs[orderId];
+//   if (!invoiceComponent || !invoiceComponent.invoiceContent) return;
 
-//   // 2. Add the Items Table
-//   const tableRows = orderData.value.items.map(item => [
-//     item.name,
-//     `$${item.price.toFixed(2)}`,
-//     item.qty,
-//     `$${(item.price * item.qty).toFixed(2)}`
-//   ]);
+//   const el = invoiceComponent.invoiceContent;
 
-//   autoTable(doc, {
-//     startY: 50,
-//     head: [['Item Name', 'Price', 'Quantity', 'Total']],
-//     body: tableRows,
-//   });
+//   const options = {
+//     margin: 10,
+//     filename: `Invoice_${orderId}.pdf`,
+//     image: { type: 'jpeg', quality: 0.98 },
+//     html2canvas: { scale: 2, useCORS: true },
+//     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+//   };
 
-//   // 3. Add Grand Total
-//   const finalY = doc.lastAutoTable.finalY + 10;
-//   const total = orderData.value.items.reduce((sum, i) => sum + (i.price * i.qty), 0);
-//   doc.setFontSize(12);
-//   doc.text(`Grand Total: $${total.toFixed(2)}`, 14, finalY);
+//   try {
+//     const pdfBlob = await html2pdf().set(options).from(el).outputPdf('blob');
 
-//   // 4. Trigger Download
-//   doc.save(`Receipt_${orderData.value.orderId}.pdf`);
+//     const formData = new FormData();
+//     formData.append('receipt', pdfBlob, `Invoice_${orderId}.pdf`);
+//     formData.append('order_id', orderId);
+//     const token = localStorage.getItem('api_token');
+//     const response = await axios.post('/api/send-order-receipt', formData, {
+//       headers: { 
+//         'Content-Type': 'multipart/form-data',
+//         'Authorization': `Bearer ${token}`
+//       }
+//     });
+
+//   } catch (error) {
+//     console.error('Error processing receipt:', error);
+//   }
 // };
+const downloadInvoice = async (orderId) => {
+  const invoiceComponent = invoiceRefs[orderId];
+  if (!invoiceComponent || !invoiceComponent.invoiceContent) return;
 
-const downloadReceipt = async (orderId) => {
   try {
-    alert(orderId)
-    const token = localStorage.getItem('api_token');
-    const response = await axios.get(`/api/orders/${orderId}/receipt`, {
-      responseType: 'blob', // MANDATORY for PDF files
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Accept': 'application/pdf'
-      }
-    });
-
-    // 2. Process the Blob
-    const blob = new Blob([response.data], { type: 'application/pdf' });
-    const url = window.URL.createObjectURL(blob);
-
-    // 3. Create a hidden link and click it
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `Order_${orderId}.pdf`);
-    document.body.appendChild(link);
-    link.click();
-
-    link.remove();
-    window.URL.revokeObjectURL(url);
-    
+    await ReceiptService.download(orderId, invoiceComponent.invoiceContent);
   } catch (error) {
-    // If you get "Network Error", check CORS on your backend
-    console.error("Error downloading PDF:", error);
-    
-    // Note: If responseType is 'blob', the error message is also a blob. 
-    // You must use FileReader to read it if the server sent a JSON error.
+    console.error('Error downloading invoice:', error);
   }
 };
 
+const sendInvoice = async (orderId) => {
+  const invoiceComponent = invoiceRefs[orderId];
+  if (!invoiceComponent || !invoiceComponent.invoiceContent) return;
+
+  try {
+    await ReceiptService.send(orderId, invoiceComponent.invoiceContent);
+    alert(`Invoice for order #${orderId} sent successfully.`);
+  } catch (error) {
+    console.error('Error sending invoice:', error);
+  }
+};
 const histories = ref([]); 
 const successMessage = ref(null);
 const defaultImgUrl = ref('https://via.placeholder.com');
@@ -219,3 +226,12 @@ onMounted(() => {
   fetchOrderHistory();
 });
 </script>
+<style scoped>
+.pdf-offscreen {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  width: 210mm; /* Force A4 width so the layout is correct for PDF */
+  background: white;
+}
+</style>

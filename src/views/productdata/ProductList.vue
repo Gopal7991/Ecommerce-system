@@ -27,7 +27,7 @@
         <div v-if="successMessage" class="mb-4 p-3 bg-green-100 text-green-700 rounded" >
             {{ successMessage }}
         </div>
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex justify-between items-center mb-6 gap-4">
             <input
             v-model="search"
             type="text"
@@ -59,7 +59,7 @@
             </div>
         </div>
         <div class="min-h-screen bg-gray-100 py-7 px-4">
-            <div class="flex flex-wrap -mx-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 <div v-for="product in filteredProducts" :key="product.id" class="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 px-3 mb-6">
                     <div class="bg-white rounded-md shadow-lg hover:shadow-xl transition duration-300 overflow-hidden flex flex-col">
                         <div class="relative w-full h-64">
@@ -209,7 +209,7 @@ function useBrands() {
       const response = await axios.get('/api/products/brands', {
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
       })
-      brands.value = response.data
+      brands.value = response.data.data
       // console.log(brands.value)
     } catch (error) {
       console.error('Error fetching brands:', error)

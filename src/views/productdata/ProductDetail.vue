@@ -39,7 +39,7 @@ const fetchProductData = async () => {
       }
     })
 
-    product.value = response.data
+    product.value = response.data.data
     console.log('check variant id',product.value)
     if (product.value.images && product.value.images.length > 0) {
         selectedImage.value = product.value.images[0].image
@@ -110,36 +110,43 @@ const handleSizeSelection = async (selectsize) => {
   }
 }
 const addToCart = async () => {
-  try {
-    if (isOutOfStock.value) {
-        toast.error("This variant is currently out of stock");
-        return;
-    }
-    const token = localStorage.getItem('api_token')
+    try {
+        if (isOutOfStock.value) {
+            toast.error("This variant is currently out of stock");
+            return;
+        }
+        const token = localStorage.getItem('api_token')
   
-    const payload = {
+        const payload = {
         product_id: product.value.id,
         color: selecteduserColor.value,
         size: selecteduserSize.value,
         quantity: quantity.value
-    }
+        }
 
-    const response =  await axios.post('/api/cart-items', payload, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json'
-      }
-    })
-    if (response.data.status == false) {
-      toast.error(response.data.message)
-    } else {
-      emitter.emit('cart-updated')
-      toast.success("Product added to cart")
-    }
+        const response =  await axios.post('/api/cart-items', payload, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json'
+          }
+        })
+        if (response.data.status == false) {
+          toast.error(response.data.message)
+        } else {
+          emitter.emit('cart-updated')
+          toast.success("Product added to cart")
+        }
     
-  } catch (error) {
-    toast.error("Please select Color or Size")
-  }
+    } catch (error) {
+        if (error.response && error.response.status === 422) {
+            const validationErrors = error.response.data.errors;
+            const firstError = Object.values(validationErrors)[0][0];
+
+            toast.error(firstError); 
+        } else {
+            toast.error("Something went wrong. Please try again.");
+        }
+    }
 }
 onMounted(() => {
   fetchProductData()

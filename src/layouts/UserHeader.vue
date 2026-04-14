@@ -68,7 +68,7 @@
         <Button
             icon="pi pi-shopping-cart"
             class="p-button-rounded p-button-text w-14 h-14 [--p-icon-size:1.5rem]"
-            @click="visible = true"
+            @click="cartStore.toggleCart(true)"
             
         />
         <Badge
@@ -93,7 +93,13 @@
                     <img :src="defaultImgUrl" class="h-full w-full object-cover"/>
                 </div>
             </button>
-            <div v-if="isDropdownOpen" class="absolute right-0 mt-2  w-25 bg-white border rounded-lg shadow-lg z-50">
+            <div v-if="isDropdownOpen" class="absolute right-0 mt-2  w-32 bg-white border rounded-lg shadow-lg z-50">
+                <a href="/my-orders" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 rounded-t-lg flex items-center" @click="isDropdownOpen = false">
+                    <i class="pi pi-sort mr-2"></i>
+                    <span>My Orders</span>
+                </a>
+                
+
                 <button
                     @click="logout"
                     class="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg flex items-center"
@@ -107,13 +113,10 @@
   </header>
     <!-- <Dialog v-model:visible="visible" modal header="Cart Items" :style="{ width: '50rem' }" :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"> -->
     <Dialog 
-        v-model:visible="visible" 
-        modal 
-        header="Cart Items" 
-        :style="{ width: '50rem' }" 
-        :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"
-        :contentStyle="{ padding: '0' }" 
-    >
+      v-model:visible="cartStore.isCartVisible" 
+      modal 
+      header="Cart Items"
+  >
     <div v-if="msgValue" class="sticky top-0 z-50 w-full p-2 bg-white border-b">
         <Message v-if="msgValue === 'sold_out'" severity="error" @close="msgValue = ''">
             <!-- Using Tailwind text-red-600 -->
@@ -141,33 +144,27 @@
                         
                         <div>
                             <h5 class="text-2xl font-semibold mb-3">
-                                {{ data.product.name }}
+                                {{ data.product ? data.product.name : 'Product Unavailable' }}
                             </h5>
-                            <p class="font-semibold mb-3">
-                                Size - {{ data.variant.size }}
-                            </p>
-                            <p class="font-semibold mb-3">
-                                Color - {{ data.variant.color }}
-                            </p>
+                            <div v-if="data.variant">
+                                <p class="font-semibold mb-3">Size - {{ data.variant.size }}</p>
+                                <p class="font-semibold mb-3">Color - {{ data.variant.color }}</p>
+                            </div>
 
-                            <div class="flex items-center gap-4 mb-6">
+                            <div class="flex items-center gap-4 mb-6" v-if="data.variant && data.variant.quantity > 0">
                                 <span class="font-medium">Quantity</span>
-
                                 <div class="flex border rounded">
                                     <button class="px-3 py-1" @click="decreaseQty(data)"> - </button>
-                                    <span class="px-4 py-1">
-                                        {{ data.quantity }}
-                                    </span>
+                                    <span class="px-4 py-1">{{ data.quantity }}</span>
                                     <button class="px-3 py-1" @click="increaseQty(data)"> + </button>
                                 </div>
                             </div>
                            
-                            <div v-if="data.variant.quantity === 0" class="text-red-500 text-sm font-bold">
-                                Out of Stock
+                            <div v-if="!data.variant || data.variant.quantity === 0" class="bg-red-100 text-red-600 p-2 rounded mb-3 font-bold text-center">
+                                Out of Stock 
                             </div>
                             
                              <div class="flex items-center gap-3 mb-4">
-                                <span class="line-through text-gray-400 text-lg">₹{{data.product.price}}</span>
                                 <span class="text-2xl font-bold">₹{{ (data.product.price - (itemDiscountMap[data.id]?.toFixed(2) || 0)) * data.quantity }} </span> 
                             </div>
                             <span v-if="discountSet.has(Number(data.id))" class="text-green-600 text-sm font-bold"> Discount: ₹{{ itemDiscountMap[data.id]?.toFixed(2) }}</span>
@@ -241,7 +238,7 @@ const CartDiscountamount = ref(0);
 const DiscountProductApplied = ref([]);
 const isApplied = ref(false);
 const cartDatas = ref([]);
-const visible = ref(false);
+// const visible = ref(false);
 const selectedImage = ref('')
 import { toast } from 'vue3-toastify';
 import { useCategoryStore } from '../stores/categoryStore' 
@@ -252,7 +249,9 @@ const msgValue = ref('');
 const navigationTabs = [
   { name: 'products', label: 'All Product', path: '/products-all', icon: 'pi pi-list',  color: 'green' },
 ];
-
+import { nextTick } from 'vue';
+import { useCartStore } from '@/stores/cartStore';
+const cartStore = useCartStore();
 const activeTab = computed(() => {
   const current = navigationTabs.find(t => route.path.startsWith(t.path));
   return current ? current.name : '';
@@ -450,12 +449,12 @@ const removeProductItem = async (id) => {
                 Accept: 'application/json'
             }
         });
-
-        if (response.data.status) {
+        const dashboardData = response.data.original; 
+        if (dashboardData.status) {
             toast.success('Item removed from cart!');
 
             cartDatas.value = cartDatas.value.filter(item => item.id !== id);
-
+            emitter.emit('cartUpdated'); 
             if (cartCount.value > 0) {
                 cartCount.value--;
             }
@@ -463,7 +462,6 @@ const removeProductItem = async (id) => {
     } catch (error) {
     }
 };
-
 
 
 const withoutDiscountTotal = computed(() => {
@@ -486,20 +484,23 @@ const finalTotal = computed(() => {
     return withoutDiscountTotal.value - CartDiscountamount.value;
 });
 const hasSoldOutItems = computed(() => {
-  return cartDatas.value.some(item => item.variant.quantity === 0);
+  return cartDatas.value.some(item => !item.variant || item.variant.quantity === 0);
 });
-const proceedToCheckout = () => {
-    // if(hasSoldOutItems)
-    // {
-    //     msgValue.value = 'sold_out';
-    //     setTimeout(() => {
-    //         msgValue.value = '';
-    //     }, 3000); 
-    //     // toast.error("Remove sold-out items first");
-    //     return;
-    // }
-    
-    visible.value = false;
+const proceedToCheckout = async () => {
+    const cartStore = useCartStore();
+    if(hasSoldOutItems.value)
+    {
+        msgValue.value = 'sold_out';
+        setTimeout(() => {
+            msgValue.value = '';
+        }, 3000); 
+        // toast.error("Remove sold-out items first");
+        return;
+    }
+    cartStore.allowCheckout();
+    cartStore.toggleCart(false);
+
+    await nextTick();
     router.push('/checkout'); 
 };
 onMounted(async () => {

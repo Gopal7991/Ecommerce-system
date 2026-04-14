@@ -29,15 +29,14 @@ const buttonLabel = ref('Save');
     try {
       const token = localStorage.getItem('api_token')
 
-      const response = await axios.get('/api/categories/categories-with-child', {
+      const response = await axios.get('/api/categories/category-with-child', {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: 'application/json'
         }
       })
       console.log(response.data)
-      categories.value = response.data
-      console.log(categories)
+      categories.value = response.data.original
     } catch (error) {
       console.error('Error fetching categories:', error)
     } finally {
@@ -119,7 +118,7 @@ onMounted(() => {
         <div class="mb-6">
           <label class="block text-sm font-medium text-gray-700"> Parent Category </label>
           <Field name="parent_id" as="select" v-model="formData.parent_id" 
-                 class="mt-1 block w-full pl-3 pr-[20px] py-2 border-gray-300 rounded-md p-2.5 border">
+                 class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none">
             <option :value="null">-- Select Parent --</option>
             <option v-for="cat in categories" :key="cat.id" :value="cat.id">
               {{ cat.full_name }}
@@ -130,10 +129,9 @@ onMounted(() => {
 
         <!-- Category Name Input -->
         <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700"> Category Name </label>
+          <label class="block text-sm font-medium text-gray-700"> Category Name <span class="text-red-500">*</span> </label>
           <Field name="name" type="text" v-model="formData.name" 
-                 class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border" 
-                 placeholder="e.g. Electronics" />
+            class="mt-1 block w-full rounded-md border-gray-300 p-2.5 border text-xs focus:border-gray-500 focus:outline-none" placeholder="e.g. Electronics"   />
           <ErrorMessage name="name" class="text-red-500 text-sm mt-1 block" />
         </div>
 
@@ -158,14 +156,14 @@ onMounted(() => {
             <button 
                 type="button" 
                 @click="goBack" 
-                class="px-4 py-2 mr-3 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition">
+                class="px-4 py-2 mr-3 bg-gray-400 text-gray-700 text-white rounded">
                 Back
             </button>
             <Button 
               type="submit"
               :loading="loading" 
               @click="saveForm"
-              class="px-6 py-2.5 !bg-indigo-300 hover:!bg-indigo-400 !rounded-md !transition-all !shadow-md !border-none"
+              class="px-6 py-2.5 !bg-indigo-400 !rounded-md !transition-all !shadow-md !border-none"
               :label="loading ? 'Saving...' : 'Save'" 
             />
         </div>

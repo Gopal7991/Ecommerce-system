@@ -5,6 +5,7 @@ export const useCategoryStore = defineStore('categoryStore', {
   state: () => ({
     categoriesData: [],
     loading1: false,
+    total: 0,
     error: null,
   }),
 
@@ -13,7 +14,7 @@ export const useCategoryStore = defineStore('categoryStore', {
   },
 
   actions: {
-      async fetchCategoriesData() {
+      async fetchCategoriesData(filters = {}) {
         this.loading1 = true;
         this.error = null;
         try {
@@ -22,9 +23,11 @@ export const useCategoryStore = defineStore('categoryStore', {
   	        headers: {
   	          Authorization: `Bearer ${token}`,
   	          Accept: 'application/json'
-  	        }
+  	        },
+            params: filters, 
   	    })
           this.categoriesData = response.data.data;
+          this.total = response.data.total;
           // console.log(this.categoriesData)
         } catch (err) {
           this.error = 'Failed to load categories';
